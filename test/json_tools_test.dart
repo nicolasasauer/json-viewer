@@ -108,6 +108,12 @@ void main() {
     expect(formatIsoDate('WS 2024/25', 'en'), isNull);
   });
 
+  test('formatBytes uses the decimal separator of the locale', () {
+    expect(formatBytes(300), '300 B');
+    expect(formatBytes(1331, 'en'), '1.3 KB');
+    expect(formatBytes(1331, 'de'), '1,3 KB');
+  });
+
   test('parse errors are translated', () {
     final error = parseJson('{"a": }').error!;
     expect(

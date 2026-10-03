@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:intl/intl.dart';
+
 import 'l10n.dart';
 
 /// A JSON syntax error with a human-friendly position.
@@ -116,8 +118,10 @@ String copyText(Object? value) {
   return jsonEncode(value);
 }
 
-String formatBytes(int bytes) {
+/// "512 B", "1.3 KB" / "1,3 KB" (decimal separator of [locale]).
+String formatBytes(int bytes, [String? locale]) {
   if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  final format = NumberFormat('0.0', locale);
+  if (bytes < 1024 * 1024) return '${format.format(bytes / 1024)} KB';
+  return '${format.format(bytes / (1024 * 1024))} MB';
 }

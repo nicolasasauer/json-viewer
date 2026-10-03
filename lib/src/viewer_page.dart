@@ -957,7 +957,10 @@ class _ViewerPageState extends State<ViewerPage> {
     final parts = [
       typeName(value, _l),
       describeContainer(value, _l),
-      formatBytes(_controller.text.length),
+      formatBytes(
+        _controller.text.length,
+        Localizations.localeOf(context).toLanguageTag(),
+      ),
     ].where((s) => s.isNotEmpty);
     return Padding(
       padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 8),
