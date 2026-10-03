@@ -49,7 +49,9 @@ void main() {
     await tester.pumpWidget(const JsonViewerApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Tree view'));
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tree view'));
     await tester.pumpAndSettle();
 
     // Top level is expanded, so the nested "name" is visible.
@@ -78,9 +80,7 @@ void main() {
     await tester.pumpWidget(const JsonViewerApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.edit_outlined));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Edit as text'));
+    await tester.tap(find.byTooltip('Text'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), '{"a": }');
@@ -160,7 +160,7 @@ void main() {
     await tester.tap(find.text('Add item (same fields)'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Edit as text'));
+    await tester.tap(find.byTooltip('Text'));
     await tester.pumpAndSettle();
     final editor = tester.widget<TextField>(find.byType(TextField));
     expect(
@@ -170,7 +170,7 @@ void main() {
     );
 
     // Undo is available back in the form.
-    await tester.tap(find.text('Form'));
+    await tester.tap(find.byTooltip('Form'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Undo'));
     await tester.pumpAndSettle();
@@ -178,20 +178,23 @@ void main() {
     expect(find.text('#2'), findsNothing);
   });
 
-  testWidgets('raw text view shows the file exactly as stored', (tester) async {
+  testWidgets('text tab shows the file exactly as stored', (tester) async {
     await tester.pumpWidget(const JsonViewerApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Raw text'));
+    await tester.tap(find.byTooltip('Text'));
     await tester.pumpAndSettle();
-    String shown() => tester
-        .widget<SelectableText>(find.byType(SelectableText))
-        .textSpan!
-        .toPlainText();
-    expect(shown(), sample);
+    final editor = tester.widget<TextField>(find.byType(TextField));
+    expect(editor.controller!.text, sample);
+  });
 
-    await tester.tap(find.text('Formatted'));
+  testWidgets('split view is only offered on wide screens', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const JsonViewerApp());
     await tester.pumpAndSettle();
-    expect(shown(), startsWith('{\n  "user": {'));
+    expect(find.byTooltip('Split view'), findsNothing);
+    expect(find.byTooltip('Form'), findsOneWidget);
   });
 }

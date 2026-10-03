@@ -13,9 +13,11 @@ import 'json_tools.dart';
 import 'json_tree_view.dart';
 import 'readable_view.dart';
 
-enum ViewMode { view, edit, split }
+/// The tabs at the top. [split] is only offered on wide screens.
+enum ViewMode { view, form, text, split }
 
-enum ViewStyle { readable, tree, text }
+/// How the view tab presents the document.
+enum ViewStyle { readable, tree }
 
 enum _DiscardChoice { cancel, discard, save }
 
@@ -47,14 +49,16 @@ class _ViewerPageState extends State<ViewerPage> {
   ViewStyle _style = ViewStyle.readable;
   bool _humanizeKeys = true;
 
-  /// Raw text view: show the file formatted instead of exactly as stored.
-  bool _formatRaw = false;
   double _fontSize = 14;
   bool _searching = false;
   bool _syncScroll = true;
 
-  /// Edit mode shows the form editor (true) or the text editor (false).
-  bool _formEditor = true;
+  /// Whether the screen is wide enough for split view (set in build).
+  bool _wide = false;
+
+  /// The mode actually shown: split falls back to text on narrow screens.
+  ViewMode get _shown =>
+      _mode == ViewMode.split && !_wide ? ViewMode.text : _mode;
 
   /// Undo/redo for form edits (the text editor has its own history).
   final List<String> _undo = [];
@@ -66,8 +70,6 @@ class _ViewerPageState extends State<ViewerPage> {
   JsonParseResult _parsed = parseJson('');
   String _parsedText = '';
   Timer? _parseTimer;
-  String? _prettyCache;
-  Object? _prettyCacheValue;
 
   bool get _dirty => _hasDocument && _controller.text != _savedText;
 
@@ -132,8 +134,7 @@ class _ViewerPageState extends State<ViewerPage> {
       _fileName = name;
       _uri = null;
       _savedText = text;
-      _mode = ViewMode.edit;
-      _formEditor = true;
+      _mode = ViewMode.form;
       _searching = false;
       _undo.clear();
       _redo.clear();
@@ -159,7 +160,7 @@ class _ViewerPageState extends State<ViewerPage> {
                 onPressed: () async {
                   if (!await _confirmDiscard() || !mounted) return;
                   _newDocument(text: text, name: 'Pasted.json');
-                  setState(() => _formEditor = false);
+                  setState(() => _mode = ViewMode.text);
                 },
               ),
       );
@@ -226,14 +227,6 @@ class _ViewerPageState extends State<ViewerPage> {
     _parseTimer?.cancel();
     if (_controller.text != _parsedText) _reparse();
     return _parsed;
-  }
-
-  String _prettyText(Object? value) {
-    if (_prettyCache == null || !identical(_prettyCacheValue, value)) {
-      _prettyCache = prettyJson(value);
-      _prettyCacheValue = value;
-    }
-    return _prettyCache!;
   }
 
   // ---- Actions --------------------------------------------------------------
@@ -347,7 +340,7 @@ class _ViewerPageState extends State<ViewerPage> {
     setState(() {
       _parseNow();
       _mode = mode;
-      if (mode == ViewMode.edit) _searching = false;
+      if (mode == ViewMode.form || mode == ViewMode.text) _searching = false;
     });
   }
 
@@ -379,8 +372,9 @@ class _ViewerPageState extends State<ViewerPage> {
 
   void _jumpToError() {
     final offset = _parsed.error?.offset;
-    if (_mode == ViewMode.view) _setMode(ViewMode.edit);
-    if (_formEditor) setState(() => _formEditor = false);
+    if (_shown != ViewMode.text && _shown != ViewMode.split) {
+      _setMode(ViewMode.text);
+    }
     if (offset != null) {
       final o = offset.clamp(0, _controller.text.length);
       _controller.selection = TextSelection.collapsed(offset: o);
@@ -430,7 +424,7 @@ class _ViewerPageState extends State<ViewerPage> {
       });
       return;
     }
-    if (_mode == ViewMode.edit) {
+    if (_mode != ViewMode.view) {
       _setMode(ViewMode.view);
       return;
     }
@@ -444,8 +438,9 @@ class _ViewerPageState extends State<ViewerPage> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 720;
+    _wide = wide;
     return PopScope(
-      canPop: !_dirty && !_searching && _mode != ViewMode.edit,
+      canPop: !_dirty && !_searching && _mode == ViewMode.view,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _handleBack();
       },
@@ -468,7 +463,7 @@ class _ViewerPageState extends State<ViewerPage> {
     final canSave = _hasDocument && (_dirty || _uri == null);
     final treeAvailable =
         _hasDocument &&
-        _mode != ViewMode.edit &&
+        (_shown == ViewMode.view || _shown == ViewMode.split) &&
         _style == ViewStyle.tree &&
         _parsed.isValid;
 
@@ -505,27 +500,33 @@ class _ViewerPageState extends State<ViewerPage> {
               visualDensity: VisualDensity.compact,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            segments: const [
-              ButtonSegment(
+            segments: [
+              const ButtonSegment(
                 value: ViewMode.view,
                 icon: Icon(Icons.visibility_outlined, semanticLabel: 'View'),
                 tooltip: 'View',
               ),
-              ButtonSegment(
-                value: ViewMode.edit,
-                icon: Icon(Icons.edit_outlined, semanticLabel: 'Edit'),
-                tooltip: 'Edit',
+              const ButtonSegment(
+                value: ViewMode.form,
+                icon: Icon(Icons.edit_outlined, semanticLabel: 'Form'),
+                tooltip: 'Form',
               ),
-              ButtonSegment(
-                value: ViewMode.split,
-                icon: Icon(
-                  Icons.vertical_split_outlined,
-                  semanticLabel: 'Split view',
+              const ButtonSegment(
+                value: ViewMode.text,
+                icon: Icon(Icons.code, semanticLabel: 'Text'),
+                tooltip: 'Text',
+              ),
+              if (wide)
+                const ButtonSegment(
+                  value: ViewMode.split,
+                  icon: Icon(
+                    Icons.vertical_split_outlined,
+                    semanticLabel: 'Split view',
+                  ),
+                  tooltip: 'Split view',
                 ),
-                tooltip: 'Split view',
-              ),
             ],
-            selected: {_mode},
+            selected: {_shown},
             onSelectionChanged: (s) => _setMode(s.first),
           ),
         const SizedBox(width: 4),
@@ -614,24 +615,33 @@ class _ViewerPageState extends State<ViewerPage> {
           ),
         ),
       if (_hasDocument) const PopupMenuDivider(),
-      if (treeAvailable && !wide)
-        PopupMenuItem(
-          value: () => setState(() => _searching = true),
-          child: const ListTile(
-            leading: Icon(Icons.search),
-            title: Text('Search'),
-          ),
+      if (valid && (_shown == ViewMode.view || _shown == ViewMode.split)) ...[
+        CheckedPopupMenuItem(
+          value: () => setState(() {
+            _style = _style == ViewStyle.tree
+                ? ViewStyle.readable
+                : ViewStyle.tree;
+            _searching = false;
+          }),
+          checked: _style == ViewStyle.tree,
+          child: const Text('Tree view'),
         ),
-      if (valid && _mode != ViewMode.edit) ...[
         if (_style == ViewStyle.readable)
           CheckedPopupMenuItem(
             value: () => setState(() => _humanizeKeys = !_humanizeKeys),
             checked: _humanizeKeys,
             child: const Text('Friendly key names'),
           ),
-        const PopupMenuDivider(),
       ],
       if (treeAvailable) ...[
+        if (!wide)
+          PopupMenuItem(
+            value: () => setState(() => _searching = true),
+            child: const ListTile(
+              leading: Icon(Icons.search),
+              title: Text('Search'),
+            ),
+          ),
         PopupMenuItem(
           value: () => _tree.expandAll(_parsed.value),
           child: const ListTile(
@@ -647,28 +657,12 @@ class _ViewerPageState extends State<ViewerPage> {
           ),
         ),
       ],
-      if (_mode == ViewMode.split)
+      if (_shown == ViewMode.split)
         CheckedPopupMenuItem(
           value: () => setState(() => _syncScroll = !_syncScroll),
           checked: _syncScroll,
           child: const Text('Sync scrolling'),
         ),
-      if (valid) ...[
-        PopupMenuItem(
-          value: _format,
-          child: const ListTile(
-            leading: Icon(Icons.format_indent_increase),
-            title: Text('Format'),
-          ),
-        ),
-        PopupMenuItem(
-          value: _minify,
-          child: const ListTile(
-            leading: Icon(Icons.compress),
-            title: Text('Minify'),
-          ),
-        ),
-      ],
       if (!wide) ...[
         const PopupMenuDivider(),
         PopupMenuItem(
@@ -734,7 +728,7 @@ class _ViewerPageState extends State<ViewerPage> {
 
   Widget _buildBody(bool wide) {
     if (!_hasDocument) return _buildWelcome();
-    switch (_mode) {
+    switch (_shown) {
       case ViewMode.view:
         return Align(
           alignment: Alignment.topCenter,
@@ -745,22 +739,26 @@ class _ViewerPageState extends State<ViewerPage> {
             child: _buildViewer(),
           ),
         );
-      case ViewMode.edit:
-        return _buildEditor();
+      case ViewMode.form:
+        return _buildFormEditor();
+      case ViewMode.text:
+        return _buildTextEditor();
       case ViewMode.split:
-        final divider = wide
-            ? const VerticalDivider(width: 1)
-            : const Divider(height: 1);
-        final children = [
-          Expanded(
-            child: _syncedPane(_editorScroll, _viewerScroll, _buildEditor()),
-          ),
-          divider,
-          Expanded(
-            child: _syncedPane(_viewerScroll, _editorScroll, _buildViewer()),
-          ),
-        ];
-        return wide ? Row(children: children) : Column(children: children);
+        return Row(
+          children: [
+            Expanded(
+              child: _syncedPane(
+                _editorScroll,
+                _viewerScroll,
+                _buildTextEditor(),
+              ),
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: _syncedPane(_viewerScroll, _editorScroll, _buildViewer()),
+            ),
+          ],
+        );
     }
   }
 
@@ -848,7 +846,7 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   Widget _buildViewer() {
-    final parsed = _mode == ViewMode.split ? _parsed : _parseNow();
+    final parsed = _shown == ViewMode.split ? _parsed : _parseNow();
     final theme = Theme.of(context);
     final mono = TextStyle(
       fontFamily: 'monospace',
@@ -882,7 +880,7 @@ class _ViewerPageState extends State<ViewerPage> {
               ),
             ),
           ),
-          if (_mode == ViewMode.view) ...[
+          if (_shown == ViewMode.view) ...[
             const SizedBox(height: 12),
             SelectableText(_controller.text, style: mono),
           ],
@@ -891,30 +889,7 @@ class _ViewerPageState extends State<ViewerPage> {
     }
 
     final value = parsed.value;
-    if (_style == ViewStyle.text) {
-      // Raw text: the document exactly as stored (or formatted on request,
-      // without changing the document).
-      final text = _formatRaw ? _prettyText(value) : _controller.text;
-      final span = text.length > JsonEditingController.highlightLimit
-          ? TextSpan(text: text, style: mono)
-          : highlightJson(text, JsonColors.of(context), mono);
-      return SingleChildScrollView(
-        controller: _mode == ViewMode.split ? _viewerScroll : null,
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildSummary(value),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SelectableText.rich(span),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final split = _mode == ViewMode.split;
+    final split = _shown == ViewMode.split;
     if (_style == ViewStyle.readable) {
       return ReadableJsonView(
         value: value,
@@ -937,7 +912,6 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  /// Summary line (type, size) with the view style switcher.
   Widget _buildSummary(Object? value, {double horizontalPadding = 16}) {
     final theme = Theme.of(context);
     final parts = [
@@ -946,81 +920,17 @@ class _ViewerPageState extends State<ViewerPage> {
       formatBytes(_controller.text.length),
     ].where((s) => s.isNotEmpty);
     return Padding(
-      padding: EdgeInsets.fromLTRB(horizontalPadding, 8, horizontalPadding, 8),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 8,
-        children: [
-          Text(
-            parts.join(' · '),
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_style == ViewStyle.text) ...[
-                FilterChip(
-                  label: const Text('Formatted'),
-                  selected: _formatRaw,
-                  visualDensity: VisualDensity.compact,
-                  onSelected: (v) => setState(() => _formatRaw = v),
-                ),
-                const SizedBox(width: 8),
-              ],
-              SegmentedButton<ViewStyle>(
-                showSelectedIcon: false,
-                style: const ButtonStyle(
-                  visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                segments: const [
-                  ButtonSegment(
-                    value: ViewStyle.readable,
-                    tooltip: 'Readable view',
-                    icon: Icon(
-                      Icons.chrome_reader_mode_outlined,
-                      size: 18,
-                      semanticLabel: 'Readable view',
-                    ),
-                  ),
-                  ButtonSegment(
-                    value: ViewStyle.tree,
-                    tooltip: 'Tree view',
-                    icon: Icon(
-                      Icons.account_tree_outlined,
-                      size: 18,
-                      semanticLabel: 'Tree view',
-                    ),
-                  ),
-                  ButtonSegment(
-                    value: ViewStyle.text,
-                    tooltip: 'Raw text',
-                    icon: Icon(
-                      Icons.data_object,
-                      size: 18,
-                      semanticLabel: 'Raw text',
-                    ),
-                  ),
-                ],
-                selected: {_style},
-                onSelectionChanged: (s) => setState(() {
-                  _style = s.first;
-                  if (_style != ViewStyle.tree) _searching = false;
-                }),
-              ),
-            ],
-          ),
-        ],
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 8),
+      child: Text(
+        parts.join(' · '),
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
 
-  Widget _buildEditor() {
-    if (_mode == ViewMode.edit && _formEditor) return _buildFormEditor();
+  Widget _buildTextEditor() {
     return JsonEditor(
       controller: _controller,
       focusNode: _editorFocus,
@@ -1030,13 +940,7 @@ class _ViewerPageState extends State<ViewerPage> {
       onFormat: _format,
       onMinify: _minify,
       onErrorTap: _jumpToError,
-      scrollController: _mode == ViewMode.split ? _editorScroll : null,
-      onSwitchToForm: _mode == ViewMode.edit
-          ? () => setState(() {
-              _parseNow();
-              _formEditor = true;
-            })
-          : null,
+      scrollController: _shown == ViewMode.split ? _editorScroll : null,
     );
   }
 
@@ -1074,11 +978,8 @@ class _ViewerPageState extends State<ViewerPage> {
                     style: TextStyle(color: theme.colorScheme.onErrorContainer),
                   ),
                   trailing: TextButton(
-                    onPressed: () {
-                      setState(() => _formEditor = false);
-                      _jumpToError();
-                    },
-                    child: const Text('Fix in text'),
+                    onPressed: _jumpToError,
+                    child: const Text('Fix in Text tab'),
                   ),
                 ),
               ),
@@ -1105,12 +1006,6 @@ class _ViewerPageState extends State<ViewerPage> {
                   onPressed: _redo.isEmpty ? null : _redoEdit,
                 ),
                 const Spacer(),
-                TextButton.icon(
-                  onPressed: () => setState(() => _formEditor = false),
-                  icon: const Icon(Icons.data_object),
-                  label: const Text('Edit as text'),
-                ),
-                const SizedBox(width: 8),
               ],
             ),
           ),
