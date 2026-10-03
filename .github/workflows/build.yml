@@ -22,16 +22,18 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
-      # Optional release signing. Add these repository secrets to sign with your
-      # upload key; without them the release build is signed with the debug key.
-      #   ANDROID_KEYSTORE_BASE64  base64 of the .jks file (base64 -w0 upload-keystore.jks)
-      #   ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+      # Optional release signing with the upload key. Repository secrets
+      # (same names as in the other app repos):
+      #   KEYSTORE_BASE64    base64 of the .jks file (base64 -w0 upload-keystore.jks)
+      #   KEYSTORE_PASSWORD  keystore password
+      #   KEY_ALIAS          key alias, e.g. "upload"
+      # The key password is the keystore password (as with keytool's default).
+      # Without them the release build is signed with the debug key.
       - name: Set up release signing
         env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "::notice::No signing secrets configured, using the debug key."
@@ -42,8 +44,9 @@ jobs:
           storeFile=upload-keystore.jks
           storePassword=$KEYSTORE_PASSWORD
           keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
           PROPS
+          echo "::notice::Release build is signed with the upload key ($KEY_ALIAS)."
 
       - run: flutter build apk --release --split-per-abi
       - run: flutter build appbundle --release
