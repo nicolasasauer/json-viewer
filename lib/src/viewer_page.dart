@@ -46,6 +46,9 @@ class _ViewerPageState extends State<ViewerPage> {
   ViewMode _mode = ViewMode.view;
   ViewStyle _style = ViewStyle.readable;
   bool _humanizeKeys = true;
+
+  /// Raw text view: show the file formatted instead of exactly as stored.
+  bool _formatRaw = false;
   double _fontSize = 14;
   bool _searching = false;
   bool _syncScroll = true;
@@ -620,19 +623,6 @@ class _ViewerPageState extends State<ViewerPage> {
           ),
         ),
       if (valid && _mode != ViewMode.edit) ...[
-        for (final (style, title) in const [
-          (ViewStyle.readable, 'Readable view'),
-          (ViewStyle.tree, 'Tree view'),
-          (ViewStyle.text, 'Text view'),
-        ])
-          CheckedPopupMenuItem(
-            value: () => setState(() {
-              _style = style;
-              if (style != ViewStyle.tree) _searching = false;
-            }),
-            checked: _style == style,
-            child: Text(title),
-          ),
         if (_style == ViewStyle.readable)
           CheckedPopupMenuItem(
             value: () => setState(() => _humanizeKeys = !_humanizeKeys),
@@ -902,14 +892,25 @@ class _ViewerPageState extends State<ViewerPage> {
 
     final value = parsed.value;
     if (_style == ViewStyle.text) {
-      final text = _prettyText(value);
+      // Raw text: the document exactly as stored (or formatted on request,
+      // without changing the document).
+      final text = _formatRaw ? _prettyText(value) : _controller.text;
       final span = text.length > JsonEditingController.highlightLimit
           ? TextSpan(text: text, style: mono)
           : highlightJson(text, JsonColors.of(context), mono);
       return SingleChildScrollView(
         controller: _mode == ViewMode.split ? _viewerScroll : null,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        child: SelectableText.rich(span),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSummary(value),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SelectableText.rich(span),
+            ),
+          ],
+        ),
       );
     }
 
@@ -936,6 +937,7 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
+  /// Summary line (type, size) with the view style switcher.
   Widget _buildSummary(Object? value, {double horizontalPadding = 16}) {
     final theme = Theme.of(context);
     final parts = [
@@ -944,12 +946,75 @@ class _ViewerPageState extends State<ViewerPage> {
       formatBytes(_controller.text.length),
     ].where((s) => s.isNotEmpty);
     return Padding(
-      padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 8),
-      child: Text(
-        parts.join(' · '),
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 8, horizontalPadding, 8),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          Text(
+            parts.join(' · '),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_style == ViewStyle.text) ...[
+                FilterChip(
+                  label: const Text('Formatted'),
+                  selected: _formatRaw,
+                  visualDensity: VisualDensity.compact,
+                  onSelected: (v) => setState(() => _formatRaw = v),
+                ),
+                const SizedBox(width: 8),
+              ],
+              SegmentedButton<ViewStyle>(
+                showSelectedIcon: false,
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                segments: const [
+                  ButtonSegment(
+                    value: ViewStyle.readable,
+                    tooltip: 'Readable view',
+                    icon: Icon(
+                      Icons.chrome_reader_mode_outlined,
+                      size: 18,
+                      semanticLabel: 'Readable view',
+                    ),
+                  ),
+                  ButtonSegment(
+                    value: ViewStyle.tree,
+                    tooltip: 'Tree view',
+                    icon: Icon(
+                      Icons.account_tree_outlined,
+                      size: 18,
+                      semanticLabel: 'Tree view',
+                    ),
+                  ),
+                  ButtonSegment(
+                    value: ViewStyle.text,
+                    tooltip: 'Raw text',
+                    icon: Icon(
+                      Icons.data_object,
+                      size: 18,
+                      semanticLabel: 'Raw text',
+                    ),
+                  ),
+                ],
+                selected: {_style},
+                onSelectionChanged: (s) => setState(() {
+                  _style = s.first;
+                  if (_style != ViewStyle.tree) _searching = false;
+                }),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

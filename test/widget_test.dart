@@ -49,9 +49,7 @@ void main() {
     await tester.pumpWidget(const JsonViewerApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('More'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Tree view'));
+    await tester.tap(find.byTooltip('Tree view'));
     await tester.pumpAndSettle();
 
     // Top level is expanded, so the nested "name" is visible.
@@ -178,5 +176,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Add item (same fields)'), findsOneWidget);
     expect(find.text('#2'), findsNothing);
+  });
+
+  testWidgets('raw text view shows the file exactly as stored', (tester) async {
+    await tester.pumpWidget(const JsonViewerApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Raw text'));
+    await tester.pumpAndSettle();
+    String shown() => tester
+        .widget<SelectableText>(find.byType(SelectableText))
+        .textSpan!
+        .toPlainText();
+    expect(shown(), sample);
+
+    await tester.tap(find.text('Formatted'));
+    await tester.pumpAndSettle();
+    expect(shown(), startsWith('{\n  "user": {'));
   });
 }

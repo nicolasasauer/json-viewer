@@ -24,11 +24,14 @@ Screenshots are taken automatically on an Android emulator by `.github/workflows
     short value lists become chips
   - no quotes or brackets: booleans as ✓/✗, colors (`#4F7CAC`) with a swatch, ISO dates formatted, `null` as —
   - sections collapse on tap; long-press anything to copy value, path or key
+- **Raw text**: the file exactly as stored, syntax-highlighted and selectable; *Formatted* shows
+  minified files indented without changing them
+- Switch between readable / tree / raw with the buttons at the top of the view
 - **Tree view**: collapsible tree with syntax colors, a summary line (type, number of keys, size)
   - tap an object or array to expand or collapse it, tap a value to see it in full
   - long-press any node to copy its value, path (`$.users[0].name`) or key
   - search keys and values (matching nodes are highlighted and their parents expanded)
-  - expand all / collapse all, or switch to formatted text
+  - expand all / collapse all
 - **Edit → Form** (default): build or extend JSON without typing syntax
   - every field has an input that fits its type: text, number, a Yes/No switch, "empty" for `null`
   - **Add field** (name + type: Text, Number, Yes/No, Group, List, Empty, or *Paste JSON* from the clipboard)

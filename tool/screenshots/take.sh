@@ -88,7 +88,9 @@ shot 01-phone-readable-light
 adb shell input swipe 540 1900 540 700 400; sleep 2
 shot 02-phone-readable-scrolled-light
 
-tap "More" && tap "Tree view" && tap "More" && tap "Expand all" && shot 03-phone-tree-light
+tap "Tree view" && tap "More" && tap "Expand all" && shot 03-phone-tree-light
+tap "Raw text" && shot 03b-phone-raw-light
+tap "Readable view"
 
 tap "Edit" && shot 04-phone-form-light
 tap "Add field" && sleep 1 && shot 05-phone-form-add-field-light
@@ -109,7 +111,7 @@ shot 09-landscape-readable-dark
 tap "Split view" && shot 10-landscape-split-dark
 tap "Informatik B.Sc." && sleep 1 && shot 11-landscape-split-jump-dark
 adb shell input keyevent KEYCODE_BACK; sleep 1
-tap "View" && tap "More" && tap "Tree view" && tap "Search" && adb shell input text "Algebra" && sleep 2 && shot 12-landscape-tree-search-dark
+tap "View" && tap "Tree view" && tap "Search" && adb shell input text "Algebra" && sleep 2 && shot 12-landscape-tree-search-dark
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
 rotate 0
