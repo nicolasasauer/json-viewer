@@ -11,8 +11,7 @@
 | Permissions | none |
 | Icon | `store/icon-512.png` |
 | Screenshots | `docs/screenshots/` (from the Screenshots workflow) |
-
-Play also needs a 1024×500 feature graphic.
+| Feature graphic (1024×500) | `store/feature-graphic-en.png`, `store/feature-graphic-de.png` (`node tool/store/feature_graphic.js`) |
 
 ## English (en-US)
 
