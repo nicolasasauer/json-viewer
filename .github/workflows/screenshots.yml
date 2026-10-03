@@ -1,7 +1,8 @@
 name: Screenshots
 
 # Runs the app on an Android emulator, opens a sample file through a real
-# VIEW intent and captures screenshots (uploaded as the "screenshots" artifact).
+# VIEW intent and captures screenshots. They are uploaded as an artifact and,
+# on branch pushes, committed to docs/screenshots/ (used by the README).
 on:
   push:
     paths:
@@ -10,6 +11,13 @@ on:
       - 'tool/screenshots/**'
       - '.github/workflows/screenshots.yml'
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   screenshots:
@@ -43,4 +51,19 @@ jobs:
         if: always()
         with:
           name: screenshots
-          path: screenshots/
+          path: |
+            docs/screenshots/
+            debug/
+      - name: Commit screenshots
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          if git diff --cached --quiet; then
+            echo "No screenshot changes."
+            exit 0
+          fi
+          git commit -m "Update screenshots [skip ci]"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

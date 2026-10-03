@@ -7,7 +7,7 @@ set -uo pipefail
 PKG=com.nicolas.json_viewer
 APK=build/app/outputs/flutter-apk/app-debug.apk
 DIR=$(cd "$(dirname "$0")" && pwd)
-OUT=screenshots
+OUT=${SCREENSHOT_DIR:-docs/screenshots}
 mkdir -p "$OUT"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; echo "captured $1"; }
@@ -26,7 +26,8 @@ tap() {
     sleep 2
   done
   echo "::warning::could not find '$1' on screen"
-  cp /tmp/ui.xml "$OUT/ui-missing-$(echo "$1" | tr -c 'a-zA-Z0-9' '_').xml" 2>/dev/null
+  mkdir -p debug
+  cp /tmp/ui.xml "debug/ui-missing-$(echo "$1" | tr -c 'a-zA-Z0-9' '_').xml" 2>/dev/null
   return 1
 }
 
@@ -44,6 +45,16 @@ adb install -r "$APK"
 # without storage permissions (run-as works because this is a debug build).
 adb push "$DIR/sample.json" /data/local/tmp/studiplan.json
 adb shell "cat /data/local/tmp/studiplan.json | run-as $PKG sh -c 'mkdir -p files && cat > files/studiplan.json'"
+
+# Clean status bar: fixed clock, full battery, no notifications.
+adb shell settings put global sysui_demo_allowed 1
+demo() { adb shell am broadcast -a com.android.systemui.demo -e command "$@" >/dev/null; }
+demo enter
+demo clock -e hhmm 1410
+demo battery -e level 100 -e plugged false
+demo network -e wifi show -e level 4
+demo network -e mobile hide
+demo notifications -e visible false
 
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 0
