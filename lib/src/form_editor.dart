@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'json_edit.dart';
 import 'json_tools.dart';
+import 'l10n.dart';
 
 /// A change to the document, applied by the owner to the *current* root.
 typedef JsonEdit = Object? Function(Object? root);
@@ -74,11 +75,14 @@ class _JsonFormEditorState extends State<JsonFormEditor> {
 }
 
 class _FormBuilder {
-  _FormBuilder(this.state, this.context) : theme = Theme.of(context);
+  _FormBuilder(this.state, this.context)
+    : theme = Theme.of(context),
+      l = context.l10n;
 
   final _JsonFormEditorState state;
   final BuildContext context;
   final ThemeData theme;
+  final AppLocalizations l;
 
   double get fontSize => state.widget.fontSize;
   Color get muted => theme.colorScheme.onSurfaceVariant;
@@ -215,8 +219,8 @@ class _FormBuilder {
                       const SizedBox(width: 8),
                       Text(
                         value is Map
-                            ? '${value.length} ${value.length == 1 ? 'field' : 'fields'}'
-                            : describeContainer(value),
+                            ? l.fieldCount(value.length)
+                            : describeContainer(value, l),
                         style: TextStyle(fontSize: fontSize - 1, color: muted),
                       ),
                     ],
@@ -244,7 +248,7 @@ class _FormBuilder {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'This document is a single value.',
+          l.singleValueDoc,
           style: TextStyle(fontSize: fontSize, color: muted),
         ),
         const SizedBox(height: 8),
@@ -256,12 +260,12 @@ class _FormBuilder {
             OutlinedButton.icon(
               onPressed: () => edit((_) => <String, Object?>{}),
               icon: const Icon(Icons.data_object),
-              label: const Text('Make it a group'),
+              label: Text(l.makeGroup),
             ),
             OutlinedButton.icon(
               onPressed: () => edit((r) => <Object?>[r]),
               icon: const Icon(Icons.format_list_bulleted),
-              label: const Text('Make it a list'),
+              label: Text(l.makeList),
             ),
           ],
         ),
@@ -276,10 +280,7 @@ class _FormBuilder {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isList
-                ? 'This list is empty. Add items below.'
-                : 'This document is empty. Add fields below, '
-                      'or start with a list instead.',
+            isList ? l.emptyListHint : l.emptyDocHint,
             style: TextStyle(fontSize: fontSize, color: muted),
           ),
           const SizedBox(height: 8),
@@ -287,7 +288,7 @@ class _FormBuilder {
             onPressed: () =>
                 edit((_) => isList ? <String, Object?>{} : <Object?>[]),
             icon: Icon(isList ? Icons.data_object : Icons.format_list_bulleted),
-            label: Text(isList ? 'Use a group instead' : 'Start with a list'),
+            label: Text(isList ? l.useGroupInstead : l.startWithList),
           ),
         ],
       ),
@@ -309,14 +310,14 @@ class _FormBuilder {
           );
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add field'),
+        label: Text(l.addField),
       ),
     );
   }
 
   Widget addItemButton(JsonPath listPath, List list) {
     Future<void> pickKind() async {
-      final value = await showPickValueDialog(context, title: 'Add item');
+      final value = await showPickValueDialog(context, title: l.addItem);
       if (value == null) return;
       edit(
         (r) => addItem(r, listPath, value.value),
@@ -342,13 +343,13 @@ class _FormBuilder {
           icon: const Icon(Icons.add),
           label: Text(
             list.isNotEmpty && list.last is Map
-                ? 'Add item (same fields)'
-                : 'Add item',
+                ? l.addItemSameFields
+                : l.addItem,
           ),
         ),
         if (list.isNotEmpty)
           IconButton(
-            tooltip: 'Add item of another type',
+            tooltip: l.addItemOtherType,
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.more_horiz),
             onPressed: pickKind,
@@ -371,7 +372,7 @@ class _FormBuilder {
               onChanged: (v) => edit((r) => setAt(r, path, v)),
             ),
             const SizedBox(width: 8),
-            Text(value ? 'Yes' : 'No', style: TextStyle(fontSize: fontSize)),
+            Text(value ? l.yes : l.no, style: TextStyle(fontSize: fontSize)),
           ],
         );
       case null:
@@ -379,7 +380,7 @@ class _FormBuilder {
           alignment: Alignment.centerLeft,
           child: ActionChip(
             avatar: const Icon(Icons.edit_outlined, size: 18),
-            label: const Text('Empty – set a value'),
+            label: Text(l.emptySetValue),
             onPressed: () => _changeType(path, value),
           ),
         );
@@ -416,44 +417,44 @@ class _FormBuilder {
     String? key,
   }) {
     return PopupMenuButton<VoidCallback>(
-      tooltip: 'Field options',
-      icon: Icon(Icons.more_vert, color: muted, semanticLabel: 'Options'),
+      tooltip: l.fieldOptions,
+      icon: Icon(Icons.more_vert, color: muted, semanticLabel: l.options),
       onSelected: (action) => action(),
       itemBuilder: (_) => [
         if (isField)
           PopupMenuItem(
             value: () => _rename(path, key!),
-            child: const ListTile(
-              leading: Icon(Icons.drive_file_rename_outline),
-              title: Text('Rename'),
+            child: ListTile(
+              leading: const Icon(Icons.drive_file_rename_outline),
+              title: Text(l.rename),
             ),
           ),
         PopupMenuItem(
           value: () => _changeType(path, value),
-          child: const ListTile(
-            leading: Icon(Icons.swap_horiz),
-            title: Text('Change type'),
+          child: ListTile(
+            leading: const Icon(Icons.swap_horiz),
+            title: Text(l.changeType),
           ),
         ),
         PopupMenuItem(
           value: () => edit((r) => duplicate(r, path)),
-          child: const ListTile(
-            leading: Icon(Icons.copy_all_outlined),
-            title: Text('Duplicate'),
+          child: ListTile(
+            leading: const Icon(Icons.copy_all_outlined),
+            title: Text(l.duplicate),
           ),
         ),
         PopupMenuItem(
           value: () => edit((r) => move(r, path, -1)),
-          child: const ListTile(
-            leading: Icon(Icons.arrow_upward),
-            title: Text('Move up'),
+          child: ListTile(
+            leading: const Icon(Icons.arrow_upward),
+            title: Text(l.moveUp),
           ),
         ),
         PopupMenuItem(
           value: () => edit((r) => move(r, path, 1)),
-          child: const ListTile(
-            leading: Icon(Icons.arrow_downward),
-            title: Text('Move down'),
+          child: ListTile(
+            leading: const Icon(Icons.arrow_downward),
+            title: Text(l.moveDown),
           ),
         ),
         PopupMenuItem(
@@ -461,7 +462,7 @@ class _FormBuilder {
           child: ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
             title: Text(
-              'Delete',
+              l.delete,
               style: TextStyle(color: theme.colorScheme.error),
             ),
           ),
@@ -475,7 +476,7 @@ class _FormBuilder {
     final taken = parent is Map ? parent.keys.where((k) => k != key) : const [];
     final newKey = await showKeyDialog(
       context,
-      title: 'Rename field',
+      title: l.renameField,
       initial: key,
       taken: taken,
     );
@@ -487,7 +488,7 @@ class _FormBuilder {
     final kind = await showDialog<JsonKind>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Change type'),
+        title: Text(l.changeType),
         children: [
           for (final k in JsonKind.values)
             SimpleDialogOption(
@@ -496,7 +497,7 @@ class _FormBuilder {
                 children: [
                   Icon(_kindIcon(k), size: 20),
                   const SizedBox(width: 12),
-                  Text(k.label),
+                  Text(k.label(l)),
                   if (k == kindOf(value)) ...[
                     const Spacer(),
                     const Icon(Icons.check, size: 20),
@@ -516,18 +517,16 @@ class _FormBuilder {
       final ok = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Change type?'),
-          content: Text(
-            'The ${describeContainer(value)} inside will be removed.',
-          ),
+          title: Text(l.changeTypeConfirmTitle),
+          content: Text(l.changeTypeConfirmBody(describeContainer(value, l))),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Change'),
+              child: Text(l.change),
             ),
           ],
         ),
@@ -578,8 +577,8 @@ Future<PickedValue?> readClipboardJson(BuildContext context) async {
         SnackBar(
           content: Text(
             text.trim().isEmpty
-                ? 'The clipboard is empty'
-                : 'The clipboard does not contain valid JSON',
+                ? context.l10n.clipboardEmpty
+                : context.l10n.clipboardNoJson,
           ),
         ),
       );
@@ -603,14 +602,14 @@ class _KindChips extends StatelessWidget {
           ChoiceChip(
             showCheckmark: false,
             avatar: Icon(_kindIcon(k), size: 18),
-            label: Text(k.label),
+            label: Text(k.label(context.l10n)),
             selected: selected == k,
             onSelected: (_) => onSelected(k),
           ),
         ChoiceChip(
           showCheckmark: false,
           avatar: const Icon(Icons.content_paste, size: 18),
-          label: const Text('Paste JSON'),
+          label: Text(context.l10n.pasteJson),
           selected: selected == 'clipboard',
           onSelected: (_) => onSelected('clipboard'),
         ),
@@ -639,16 +638,16 @@ Future<({String key, Object? value})?> showAddFieldDialog(
         void submit() {
           final key = controller.text.trim();
           if (key.isEmpty) {
-            setState(() => error = 'Enter a name');
+            setState(() => error = context.l10n.enterName);
           } else if (taken.contains(key)) {
-            setState(() => error = '"$key" already exists');
+            setState(() => error = context.l10n.nameExists(key));
           } else {
             Navigator.pop(context, (key: key, choice: choice));
           }
         }
 
         return AlertDialog(
-          title: const Text('Add field'),
+          title: Text(context.l10n.addField),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -658,7 +657,7 @@ Future<({String key, Object? value})?> showAddFieldDialog(
                   controller: controller,
                   autofocus: true,
                   decoration: InputDecoration(
-                    labelText: 'Name',
+                    labelText: context.l10n.name,
                     errorText: error,
                   ),
                   onSubmitted: (_) => submit(),
@@ -674,9 +673,9 @@ Future<({String key, Object? value})?> showAddFieldDialog(
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancel),
             ),
-            FilledButton(onPressed: submit, child: const Text('Add')),
+            FilledButton(onPressed: submit, child: Text(context.l10n.add)),
           ],
         );
       },
@@ -706,17 +705,17 @@ Future<PickedValue?> showPickValueDialog(
               children: [
                 Icon(_kindIcon(k), size: 20),
                 const SizedBox(width: 12),
-                Text(k.label),
+                Text(k.label(context.l10n)),
               ],
             ),
           ),
         SimpleDialogOption(
           onPressed: () => Navigator.pop(context, 'clipboard'),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.content_paste, size: 20),
-              SizedBox(width: 12),
-              Text('Paste JSON'),
+              const Icon(Icons.content_paste, size: 20),
+              const SizedBox(width: 12),
+              Text(context.l10n.pasteJson),
             ],
           ),
         ),
@@ -744,9 +743,9 @@ Future<String?> showKeyDialog(
         void submit() {
           final key = controller.text.trim();
           if (key.isEmpty) {
-            setState(() => error = 'Enter a name');
+            setState(() => error = context.l10n.enterName);
           } else if (takenSet.contains(key)) {
-            setState(() => error = '"$key" already exists');
+            setState(() => error = context.l10n.nameExists(key));
           } else {
             Navigator.pop(context, key);
           }
@@ -757,15 +756,18 @@ Future<String?> showKeyDialog(
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: InputDecoration(labelText: 'Name', errorText: error),
+            decoration: InputDecoration(
+              labelText: context.l10n.name,
+              errorText: error,
+            ),
             onSubmitted: (_) => submit(),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancel),
             ),
-            FilledButton(onPressed: submit, child: const Text('Save')),
+            FilledButton(onPressed: submit, child: Text(context.l10n.save)),
           ],
         );
       },
@@ -843,7 +845,7 @@ class _InlineFieldState extends State<_InlineField> {
     final text = _controller.text;
     if (text == widget.value) return;
     if (!_valid(text)) {
-      setState(() => _error = 'Not a number');
+      setState(() => _error = context.l10n.notANumber);
       return;
     }
     if (_error != null) setState(() => _error = null);
@@ -865,7 +867,7 @@ class _InlineFieldState extends State<_InlineField> {
         isDense: true,
         border: const OutlineInputBorder(),
         errorText: _error,
-        hintText: widget.numeric ? '0' : 'Text',
+        hintText: widget.numeric ? '0' : context.l10n.textHint,
       ),
       onChanged: (_) {
         _debounce?.cancel();

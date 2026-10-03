@@ -1,4 +1,7 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:json_viewer/l10n/app_localizations.dart';
 import 'package:json_viewer/src/json_highlighter.dart';
 import 'package:json_viewer/src/json_locator.dart';
 import 'package:json_viewer/src/json_tools.dart';
@@ -94,10 +97,33 @@ void main() {
     expect(humanizeKey('_'), '_');
   });
 
-  test('formatIsoDate', () {
-    expect(formatIsoDate('2025-02-12'), '12 Feb 2025');
-    expect(formatIsoDate('2026-10-03T14:10:00Z'), '3 Oct 2026, 14:10 UTC');
-    expect(formatIsoDate('WS 2024/25'), isNull);
+  test('formatIsoDate', () async {
+    await initializeDateFormatting('de');
+    expect(formatIsoDate('2025-02-12', 'en'), 'Feb 12, 2025');
+    expect(formatIsoDate('2025-02-12', 'de'), '12. Feb. 2025');
+    expect(
+      formatIsoDate('2026-10-03T14:10:00Z', 'de'),
+      '3. Okt. 2026 14:10 UTC',
+    );
+    expect(formatIsoDate('WS 2024/25', 'en'), isNull);
+  });
+
+  test('formatBytes uses the decimal separator of the locale', () {
+    expect(formatBytes(300), '300 B');
+    expect(formatBytes(1331, 'en'), '1.3 KB');
+    expect(formatBytes(1331, 'de'), '1,3 KB');
+  });
+
+  test('parse errors are translated', () {
+    final error = parseJson('{"a": }').error!;
+    expect(
+      error.describe(lookupAppLocalizations(const Locale('en'))),
+      'Line 1, column 7: Unexpected character',
+    );
+    expect(
+      error.describe(lookupAppLocalizations(const Locale('de'))),
+      'Zeile 1, Spalte 7: Unerwartetes Zeichen',
+    );
   });
 
   test('locateJsonValues maps paths to source ranges', () {

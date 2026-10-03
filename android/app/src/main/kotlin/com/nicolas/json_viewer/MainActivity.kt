@@ -1,6 +1,7 @@
 package com.nicolas.json_viewer
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -53,6 +54,19 @@ class MainActivity : FlutterActivity() {
                                 } catch (e: Exception) {
                                     mainHandler.post { result.error("save_failed", e.message ?: e.toString(), null) }
                                 }
+                            }
+                        }
+                    }
+                    "openUrl" -> {
+                        val url = call.argument<String>("url")
+                        if (url == null) {
+                            result.error("bad_args", "url is required", null)
+                        } else {
+                            try {
+                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                result.success(true)
+                            } catch (e: ActivityNotFoundException) {
+                                result.success(false)
                             }
                         }
                     }

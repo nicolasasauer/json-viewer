@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'about.dart';
 import 'file_bridge.dart';
 import 'form_editor.dart';
 import 'json_edit.dart';
@@ -11,6 +12,7 @@ import 'json_text_controller.dart';
 import 'json_locator.dart';
 import 'json_tools.dart';
 import 'json_tree_view.dart';
+import 'l10n.dart';
 import 'readable_view.dart';
 
 /// The tabs at the top. [split] is only offered on wide screens.
@@ -71,6 +73,8 @@ class _ViewerPageState extends State<ViewerPage> {
   String _parsedText = '';
   Timer? _parseTimer;
 
+  AppLocalizations get _l => context.l10n;
+
   bool get _dirty => _hasDocument && _controller.text != _savedText;
 
   @override
@@ -79,7 +83,7 @@ class _ViewerPageState extends State<ViewerPage> {
     _controller.addListener(_onTextChanged);
     _bridge.setOnFileOpened(
       (file) => _openWithConfirm(file),
-      onError: (e) => _snack('Could not open file: $e'),
+      onError: (e) => _snack(_l.couldNotOpen('$e')),
     );
     _loadInitialFile();
   }
@@ -105,7 +109,7 @@ class _ViewerPageState extends State<ViewerPage> {
     } on MissingPluginException {
       // Not running on Android (e.g. tests); start empty.
     } catch (e) {
-      _snack('Could not open file: $e');
+      _snack(_l.couldNotOpen('$e'));
     }
   }
 
@@ -150,13 +154,11 @@ class _ViewerPageState extends State<ViewerPage> {
     if (!mounted) return;
     if (!parsed.isValid) {
       _snack(
-        text.trim().isEmpty
-            ? 'The clipboard is empty'
-            : 'The clipboard does not contain valid JSON',
+        text.trim().isEmpty ? _l.clipboardEmpty : _l.clipboardNoJson,
         action: text.trim().isEmpty
             ? null
             : SnackBarAction(
-                label: 'Open as text',
+                label: _l.openAsText,
                 onPressed: () async {
                   if (!await _confirmDiscard() || !mounted) return;
                   _newDocument(text: text, name: 'Pasted.json');
@@ -180,7 +182,7 @@ class _ViewerPageState extends State<ViewerPage> {
     try {
       value = edit(deepCopy(parsed.value));
     } catch (e) {
-      _snack('Could not apply change: $e');
+      _snack(_l.couldNotApply('$e'));
       return;
     }
     final after = encodeLike(value, before);
@@ -237,7 +239,7 @@ class _ViewerPageState extends State<ViewerPage> {
       final file = await _bridge.openDocument();
       if (file != null && mounted) _load(file);
     } catch (e) {
-      _snack('Could not open file: ${_errorText(e)}');
+      _snack(_l.couldNotOpen(_errorText(e)));
     }
   }
 
@@ -261,16 +263,16 @@ class _ViewerPageState extends State<ViewerPage> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Save invalid JSON?'),
-          content: Text('${parsed.error}'),
+          title: Text(_l.saveInvalidTitle),
+          content: Text(parsed.error!.describe(_l)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(_l.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Save anyway'),
+              child: Text(_l.saveAnyway),
             ),
           ],
         ),
@@ -289,15 +291,15 @@ class _ViewerPageState extends State<ViewerPage> {
       }
       if (!mounted) return true;
       setState(() => _savedText = text);
-      _snack('Saved $_fileName');
+      _snack(_l.saved(_fileName));
       return true;
     } catch (e) {
       _snack(
-        'Could not save file: ${_errorText(e)}',
+        _l.couldNotSave(_errorText(e)),
         action: saveAs
             ? null
             : SnackBarAction(
-                label: 'Save as',
+                label: _l.saveAs,
                 onPressed: () => _save(saveAs: true),
               ),
       );
@@ -311,20 +313,20 @@ class _ViewerPageState extends State<ViewerPage> {
     final choice = await showDialog<_DiscardChoice>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: Text('"$_fileName" has unsaved changes.'),
+        title: Text(_l.discardTitle),
+        content: Text(_l.unsavedChanges(_fileName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, _DiscardChoice.cancel),
-            child: const Text('Cancel'),
+            child: Text(_l.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, _DiscardChoice.discard),
-            child: const Text('Discard'),
+            child: Text(_l.discard),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, _DiscardChoice.save),
-            child: const Text('Save'),
+            child: Text(_l.save),
           ),
         ],
       ),
@@ -355,7 +357,7 @@ class _ViewerPageState extends State<ViewerPage> {
   void _format() {
     final parsed = _parseNow();
     if (!parsed.isValid) {
-      _snack('Cannot format: ${parsed.error}');
+      _snack(_l.cannotFormat(parsed.error!.describe(_l)));
       return;
     }
     _replaceText(prettyJson(parsed.value));
@@ -364,7 +366,7 @@ class _ViewerPageState extends State<ViewerPage> {
   void _minify() {
     final parsed = _parseNow();
     if (!parsed.isValid) {
-      _snack('Cannot minify: ${parsed.error}');
+      _snack(_l.cannotMinify(parsed.error!.describe(_l)));
       return;
     }
     _replaceText(minifyJson(parsed.value));
@@ -398,12 +400,20 @@ class _ViewerPageState extends State<ViewerPage> {
     _editorFocus.requestFocus();
   }
 
+  Future<void> _openUrl(String url) async {
+    try {
+      if (!await _bridge.openUrl(url)) _snack(_l.noAppForLink(url));
+    } catch (e) {
+      _snack(_l.noAppForLink(url));
+    }
+  }
+
   void _changeFontSize(double delta) =>
       setState(() => _fontSize = (_fontSize + delta).clamp(10, 28));
 
   void _copyAll() {
     Clipboard.setData(ClipboardData(text: _controller.text));
-    _snack('Document copied');
+    _snack(_l.documentCopied);
   }
 
   void _snack(String message, {SnackBarAction? action}) {
@@ -478,7 +488,7 @@ class _ViewerPageState extends State<ViewerPage> {
           ],
           Flexible(
             child: Text(
-              _hasDocument ? _fileName : 'JSON Viewer',
+              _hasDocument ? _fileName : _l.appTitle,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -501,29 +511,32 @@ class _ViewerPageState extends State<ViewerPage> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             segments: [
-              const ButtonSegment(
+              ButtonSegment(
                 value: ViewMode.view,
-                icon: Icon(Icons.visibility_outlined, semanticLabel: 'View'),
-                tooltip: 'View',
+                icon: Icon(
+                  Icons.visibility_outlined,
+                  semanticLabel: _l.tabView,
+                ),
+                tooltip: _l.tabView,
               ),
-              const ButtonSegment(
+              ButtonSegment(
                 value: ViewMode.form,
-                icon: Icon(Icons.edit_outlined, semanticLabel: 'Form'),
-                tooltip: 'Form',
+                icon: Icon(Icons.edit_outlined, semanticLabel: _l.tabForm),
+                tooltip: _l.tabForm,
               ),
-              const ButtonSegment(
+              ButtonSegment(
                 value: ViewMode.text,
-                icon: Icon(Icons.code, semanticLabel: 'Text'),
-                tooltip: 'Text',
+                icon: Icon(Icons.code, semanticLabel: _l.tabText),
+                tooltip: _l.tabText,
               ),
               if (wide)
-                const ButtonSegment(
+                ButtonSegment(
                   value: ViewMode.split,
                   icon: Icon(
                     Icons.vertical_split_outlined,
-                    semanticLabel: 'Split view',
+                    semanticLabel: _l.tabSplit,
                   ),
-                  tooltip: 'Split view',
+                  tooltip: _l.tabSplit,
                 ),
             ],
             selected: {_shown},
@@ -532,34 +545,34 @@ class _ViewerPageState extends State<ViewerPage> {
         const SizedBox(width: 4),
         if (_hasDocument)
           IconButton(
-            tooltip: 'Save',
+            tooltip: _l.save,
             icon: const Icon(Icons.save_outlined),
             onPressed: canSave ? _save : null,
           ),
         if (treeAvailable && wide)
           IconButton(
-            tooltip: 'Search',
-            icon: const Icon(Icons.search, semanticLabel: 'Search'),
+            tooltip: _l.search,
+            icon: Icon(Icons.search, semanticLabel: _l.search),
             onPressed: () => setState(() => _searching = !_searching),
           ),
         if (wide) ...[
           IconButton(
-            tooltip: 'Smaller text',
+            tooltip: _l.smallerText,
             icon: const Text('A−', style: TextStyle(fontSize: 18)),
             onPressed: () => _changeFontSize(-1),
           ),
           IconButton(
-            tooltip: 'Larger text',
+            tooltip: _l.largerText,
             icon: const Text('A+', style: TextStyle(fontSize: 18)),
             onPressed: () => _changeFontSize(1),
           ),
           IconButton(
-            tooltip: 'Open file',
+            tooltip: _l.openFile,
             icon: const Icon(Icons.folder_open_outlined),
             onPressed: _open,
           ),
           IconButton(
-            tooltip: dark ? 'Light theme' : 'Dark theme',
+            tooltip: dark ? _l.lightTheme : _l.darkTheme,
             icon: Icon(
               dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
             ),
@@ -578,40 +591,40 @@ class _ViewerPageState extends State<ViewerPage> {
     final items = <PopupMenuEntry<VoidCallback>>[
       PopupMenuItem(
         value: _create,
-        child: const ListTile(
-          leading: Icon(Icons.note_add_outlined),
-          title: Text('New'),
+        child: ListTile(
+          leading: const Icon(Icons.note_add_outlined),
+          title: Text(_l.newDocument),
         ),
       ),
       PopupMenuItem(
         value: _pasteAsNew,
-        child: const ListTile(
-          leading: Icon(Icons.content_paste),
-          title: Text('Paste JSON'),
+        child: ListTile(
+          leading: const Icon(Icons.content_paste),
+          title: Text(_l.pasteJson),
         ),
       ),
       if (!wide)
         PopupMenuItem(
           value: _open,
-          child: const ListTile(
-            leading: Icon(Icons.folder_open_outlined),
-            title: Text('Open file'),
+          child: ListTile(
+            leading: const Icon(Icons.folder_open_outlined),
+            title: Text(_l.openFile),
           ),
         ),
       if (_hasDocument)
         PopupMenuItem(
           value: () => _save(saveAs: true),
-          child: const ListTile(
-            leading: Icon(Icons.save_as_outlined),
-            title: Text('Save as…'),
+          child: ListTile(
+            leading: const Icon(Icons.save_as_outlined),
+            title: Text(_l.saveAs),
           ),
         ),
       if (_hasDocument)
         PopupMenuItem(
           value: _copyAll,
-          child: const ListTile(
-            leading: Icon(Icons.content_copy),
-            title: Text('Copy all'),
+          child: ListTile(
+            leading: const Icon(Icons.content_copy),
+            title: Text(_l.copyAll),
           ),
         ),
       if (_hasDocument) const PopupMenuDivider(),
@@ -624,36 +637,36 @@ class _ViewerPageState extends State<ViewerPage> {
             _searching = false;
           }),
           checked: _style == ViewStyle.tree,
-          child: const Text('Tree view'),
+          child: Text(_l.treeView),
         ),
         if (_style == ViewStyle.readable)
           CheckedPopupMenuItem(
             value: () => setState(() => _humanizeKeys = !_humanizeKeys),
             checked: _humanizeKeys,
-            child: const Text('Friendly key names'),
+            child: Text(_l.friendlyKeyNames),
           ),
       ],
       if (treeAvailable) ...[
         if (!wide)
           PopupMenuItem(
             value: () => setState(() => _searching = true),
-            child: const ListTile(
-              leading: Icon(Icons.search),
-              title: Text('Search'),
+            child: ListTile(
+              leading: const Icon(Icons.search),
+              title: Text(_l.search),
             ),
           ),
         PopupMenuItem(
           value: () => _tree.expandAll(_parsed.value),
-          child: const ListTile(
-            leading: Icon(Icons.unfold_more),
-            title: Text('Expand all'),
+          child: ListTile(
+            leading: const Icon(Icons.unfold_more),
+            title: Text(_l.expandAll),
           ),
         ),
         PopupMenuItem(
           value: _tree.collapseAll,
-          child: const ListTile(
-            leading: Icon(Icons.unfold_less),
-            title: Text('Collapse all'),
+          child: ListTile(
+            leading: const Icon(Icons.unfold_less),
+            title: Text(_l.collapseAll),
           ),
         ),
       ],
@@ -661,16 +674,16 @@ class _ViewerPageState extends State<ViewerPage> {
           (_shown == ViewMode.text || _shown == ViewMode.split)) ...[
         PopupMenuItem(
           value: _controller.foldAll,
-          child: const ListTile(
-            leading: Icon(Icons.unfold_less),
-            title: Text('Fold all'),
+          child: ListTile(
+            leading: const Icon(Icons.unfold_less),
+            title: Text(_l.foldAll),
           ),
         ),
         PopupMenuItem(
           value: _controller.unfoldAll,
-          child: const ListTile(
-            leading: Icon(Icons.unfold_more),
-            title: Text('Unfold all'),
+          child: ListTile(
+            leading: const Icon(Icons.unfold_more),
+            title: Text(_l.unfoldAll),
           ),
         ),
       ],
@@ -678,22 +691,22 @@ class _ViewerPageState extends State<ViewerPage> {
         CheckedPopupMenuItem(
           value: () => setState(() => _syncScroll = !_syncScroll),
           checked: _syncScroll,
-          child: const Text('Sync scrolling'),
+          child: Text(_l.syncScrolling),
         ),
       if (!wide) ...[
         const PopupMenuDivider(),
         PopupMenuItem(
           value: () => _changeFontSize(-1),
-          child: const ListTile(
-            leading: Icon(Icons.text_decrease),
-            title: Text('Smaller text'),
+          child: ListTile(
+            leading: const Icon(Icons.text_decrease),
+            title: Text(_l.smallerText),
           ),
         ),
         PopupMenuItem(
           value: () => _changeFontSize(1),
-          child: const ListTile(
-            leading: Icon(Icons.text_increase),
-            title: Text('Larger text'),
+          child: ListTile(
+            leading: const Icon(Icons.text_increase),
+            title: Text(_l.largerText),
           ),
         ),
         PopupMenuItem(
@@ -702,14 +715,24 @@ class _ViewerPageState extends State<ViewerPage> {
             leading: Icon(
               dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
             ),
-            title: Text(dark ? 'Light theme' : 'Dark theme'),
+            title: Text(dark ? _l.lightTheme : _l.darkTheme),
           ),
         ),
       ],
     ];
+    items.addAll([
+      const PopupMenuDivider(),
+      PopupMenuItem(
+        value: () => showAboutAppDialog(context, onOpenUrl: _openUrl),
+        child: ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: Text(_l.about),
+        ),
+      ),
+    ]);
     return PopupMenuButton<VoidCallback>(
-      tooltip: 'More',
-      icon: const Icon(Icons.more_vert, semanticLabel: 'More'),
+      tooltip: _l.more,
+      icon: Icon(Icons.more_vert, semanticLabel: _l.more),
       onSelected: (action) => action(),
       itemBuilder: (_) => items,
     );
@@ -726,10 +749,10 @@ class _ViewerPageState extends State<ViewerPage> {
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             isDense: true,
-            hintText: 'Search keys and values',
+            hintText: _l.searchHint,
             prefixIcon: const Icon(Icons.search),
             suffixIcon: IconButton(
-              tooltip: 'Close search',
+              tooltip: _l.closeSearch,
               icon: const Icon(Icons.close),
               onPressed: () => setState(() {
                 _searching = false;
@@ -824,10 +847,10 @@ class _ViewerPageState extends State<ViewerPage> {
           children: [
             Icon(Icons.data_object, size: 72, color: theme.colorScheme.primary),
             const SizedBox(height: 16),
-            Text('JSON Viewer', style: theme.textTheme.headlineSmall),
+            Text(_l.appTitle, style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
-              'Open a .json file, create a new one or paste JSON.',
+              _l.welcomeText,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -842,17 +865,17 @@ class _ViewerPageState extends State<ViewerPage> {
                 FilledButton.icon(
                   onPressed: _open,
                   icon: const Icon(Icons.folder_open_outlined),
-                  label: const Text('Open file'),
+                  label: Text(_l.openFile),
                 ),
                 OutlinedButton.icon(
                   onPressed: _create,
                   icon: const Icon(Icons.note_add_outlined),
-                  label: const Text('New'),
+                  label: Text(_l.newDocument),
                 ),
                 OutlinedButton.icon(
                   onPressed: _pasteAsNew,
                   icon: const Icon(Icons.content_paste),
-                  label: const Text('Paste JSON'),
+                  label: Text(_l.pasteJson),
                 ),
               ],
             ),
@@ -884,16 +907,16 @@ class _ViewerPageState extends State<ViewerPage> {
                 color: theme.colorScheme.onErrorContainer,
               ),
               title: Text(
-                'Invalid JSON',
+                _l.invalidJson,
                 style: TextStyle(color: theme.colorScheme.onErrorContainer),
               ),
               subtitle: Text(
-                '${parsed.error}',
+                parsed.error!.describe(_l),
                 style: TextStyle(color: theme.colorScheme.onErrorContainer),
               ),
               trailing: TextButton(
                 onPressed: _jumpToError,
-                child: const Text('Go to error'),
+                child: Text(_l.goToError),
               ),
             ),
           ),
@@ -932,9 +955,12 @@ class _ViewerPageState extends State<ViewerPage> {
   Widget _buildSummary(Object? value, {double horizontalPadding = 16}) {
     final theme = Theme.of(context);
     final parts = [
-      typeName(value),
-      describeContainer(value),
-      formatBytes(_controller.text.length),
+      typeName(value, _l),
+      describeContainer(value, _l),
+      formatBytes(
+        _controller.text.length,
+        Localizations.localeOf(context).toLanguageTag(),
+      ),
     ].where((s) => s.isNotEmpty);
     return Padding(
       padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 8),
@@ -987,16 +1013,16 @@ class _ViewerPageState extends State<ViewerPage> {
                     color: theme.colorScheme.onErrorContainer,
                   ),
                   title: Text(
-                    'The form needs valid JSON',
+                    _l.formNeedsValidJson,
                     style: TextStyle(color: theme.colorScheme.onErrorContainer),
                   ),
                   subtitle: Text(
-                    '${parsed.error}',
+                    parsed.error!.describe(_l),
                     style: TextStyle(color: theme.colorScheme.onErrorContainer),
                   ),
                   trailing: TextButton(
                     onPressed: _jumpToError,
-                    child: const Text('Fix in Text tab'),
+                    child: Text(_l.fixInTextTab),
                   ),
                 ),
               ),
@@ -1013,13 +1039,13 @@ class _ViewerPageState extends State<ViewerPage> {
             child: Row(
               children: [
                 IconButton(
-                  tooltip: 'Undo',
-                  icon: const Icon(Icons.undo, semanticLabel: 'Undo'),
+                  tooltip: _l.undo,
+                  icon: Icon(Icons.undo, semanticLabel: _l.undo),
                   onPressed: _undo.isEmpty ? null : _undoEdit,
                 ),
                 IconButton(
-                  tooltip: 'Redo',
-                  icon: const Icon(Icons.redo, semanticLabel: 'Redo'),
+                  tooltip: _l.redo,
+                  icon: Icon(Icons.redo, semanticLabel: _l.redo),
                   onPressed: _redo.isEmpty ? null : _redoEdit,
                 ),
                 const Spacer(),

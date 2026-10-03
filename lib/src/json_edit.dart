@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'l10n.dart';
+
 /// A path into a JSON value: object keys (String) and list indexes (int).
 typedef JsonPath = List<Object>;
 
@@ -7,13 +9,13 @@ typedef JsonPath = List<Object>;
 enum JsonKind { text, number, boolean, group, list, empty }
 
 extension JsonKindLabel on JsonKind {
-  String get label => switch (this) {
-    JsonKind.text => 'Text',
-    JsonKind.number => 'Number',
-    JsonKind.boolean => 'Yes/No',
-    JsonKind.group => 'Group',
-    JsonKind.list => 'List',
-    JsonKind.empty => 'Empty (null)',
+  String label(AppLocalizations l) => switch (this) {
+    JsonKind.text => l.kindText,
+    JsonKind.number => l.kindNumber,
+    JsonKind.boolean => l.kindBoolean,
+    JsonKind.group => l.kindGroup,
+    JsonKind.list => l.kindList,
+    JsonKind.empty => l.kindEmpty,
   };
 
   Object? get initialValue => switch (this) {

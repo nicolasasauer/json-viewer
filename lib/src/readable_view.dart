@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'json_highlighter.dart';
 import 'json_tools.dart';
+import 'l10n.dart';
 import 'node_actions.dart';
 
 /// Renders JSON as a document instead of code: objects become sections with
@@ -72,20 +74,6 @@ final _hexColor = RegExp(
 final _isoDate = RegExp(r'^\d{4}-\d{2}-\d{2}$');
 final _isoDateTime = RegExp(r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}');
 final _url = RegExp(r'^https?://\S+$');
-const _months = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
 
 /// "studyProgram" → "Study program", "target_ECTS" → "Target ECTS".
 String humanizeKey(String key) {
@@ -112,22 +100,23 @@ String humanizeKey(String key) {
 bool _isAcronym(String w) =>
     w.length > 1 && w == w.toUpperCase() && w != w.toLowerCase();
 
-/// Formats ISO dates ("2025-02-12" → "12 Feb 2025"); null if not a date.
-String? formatIsoDate(String s) {
+/// Formats ISO dates for [locale] ("2025-02-12" → "Feb 12, 2025" /
+/// "12. Feb. 2025"); null if [s] is not a date.
+String? formatIsoDate(String s, String locale) {
   if (!_isoDate.hasMatch(s) && !_isoDateTime.hasMatch(s)) return null;
   final d = DateTime.tryParse(s);
   if (d == null) return null;
-  final date = '${d.day} ${_months[d.month - 1]} ${d.year}';
-  if (_isoDate.hasMatch(s)) return date;
-  final time =
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-  return '$date, $time${d.isUtc ? ' UTC' : ''}';
+  if (_isoDate.hasMatch(s)) return DateFormat.yMMMd(locale).format(d);
+  final formatted = DateFormat.yMMMd(locale).add_Hm().format(d);
+  return d.isUtc ? '$formatted UTC' : formatted;
 }
 
 class _Renderer {
   _Renderer(this.context, this.fontSize, this.humanize, this.onNodeTap)
     : theme = Theme.of(context),
-      colors = JsonColors.of(context);
+      colors = JsonColors.of(context),
+      l = context.l10n,
+      locale = Localizations.localeOf(context).toLanguageTag();
 
   final BuildContext context;
   final double fontSize;
@@ -135,6 +124,8 @@ class _Renderer {
   final void Function(String path)? onNodeTap;
   final ThemeData theme;
   final JsonColors colors;
+  final AppLocalizations l;
+  final String locale;
 
   Color get muted => theme.colorScheme.onSurfaceVariant;
 
@@ -173,7 +164,7 @@ class _Renderer {
       return _Section(
         depth: depth,
         title: label(key),
-        subtitle: describeContainer(value),
+        subtitle: describeContainer(value, l),
         fontSize: fontSize,
         onHeaderLongPress: () =>
             showJsonNodeActions(context, path: path, value: value, key: key),
@@ -195,7 +186,7 @@ class _Renderer {
   }
 
   Widget object(Map value, String path, int depth, {String? skipKey}) {
-    if (value.isEmpty) return emptyNote('Empty');
+    if (value.isEmpty) return emptyNote(l.empty);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -206,7 +197,7 @@ class _Renderer {
   }
 
   Widget list(List value, String path, int depth) {
-    if (value.isEmpty) return emptyNote('Empty list');
+    if (value.isEmpty) return emptyNote(l.emptyList);
 
     if (value.every((v) => v is! Map && v is! List)) {
       final short =
@@ -460,7 +451,7 @@ class _Renderer {
               color: v ? yes : muted,
             ),
             const SizedBox(width: 6),
-            Text(v ? 'Yes' : 'No', style: style),
+            Text(v ? l.yes : l.no, style: style),
           ],
         );
       case num():
@@ -473,7 +464,7 @@ class _Renderer {
       case String():
         if (v.isEmpty) {
           return Text(
-            'Empty',
+            l.empty,
             style: style.copyWith(color: muted, fontStyle: FontStyle.italic),
           );
         }
@@ -498,7 +489,7 @@ class _Renderer {
             ],
           );
         }
-        final date = formatIsoDate(v);
+        final date = formatIsoDate(v, locale);
         if (date != null) return Text(date, style: style);
         if (_url.hasMatch(v)) {
           return Text(
@@ -710,7 +701,7 @@ class _CappedState extends State<_Capped> {
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: () => setState(() => _all = true),
-              child: Text('Show all ${widget.count} items'),
+              child: Text(context.l10n.showAll(widget.count)),
             ),
           ),
       ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'json_highlighter.dart';
 import 'json_tools.dart';
 import 'node_actions.dart';
+import 'l10n.dart';
 
 /// One visible line in the tree.
 class JsonTreeRow {
@@ -305,7 +306,7 @@ class _JsonRowTile extends StatelessWidget {
           ),
         );
     }
-    spans.add(_valueSpan(value, colors, theme));
+    spans.add(_valueSpan(value, colors, theme, context.l10n));
 
     return Material(
       color: highlighted
@@ -364,7 +365,12 @@ class _JsonRowTile extends StatelessWidget {
     );
   }
 
-  InlineSpan _valueSpan(Object? value, JsonColors colors, ThemeData theme) {
+  InlineSpan _valueSpan(
+    Object? value,
+    JsonColors colors,
+    ThemeData theme,
+    AppLocalizations l,
+  ) {
     final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
     return switch (value) {
       Map() => TextSpan(
@@ -373,7 +379,7 @@ class _JsonRowTile extends StatelessWidget {
             text: expanded ? '{' : '{…}',
             style: TextStyle(color: colors.punctuation),
           ),
-          TextSpan(text: '  ${describeContainer(value)}', style: muted),
+          TextSpan(text: '  ${describeContainer(value, l)}', style: muted),
         ],
       ),
       List() => TextSpan(
@@ -382,7 +388,7 @@ class _JsonRowTile extends StatelessWidget {
             text: expanded ? '[' : '[…]',
             style: TextStyle(color: colors.punctuation),
           ),
-          TextSpan(text: '  ${describeContainer(value)}', style: muted),
+          TextSpan(text: '  ${describeContainer(value, l)}', style: muted),
         ],
       ),
       String() => TextSpan(

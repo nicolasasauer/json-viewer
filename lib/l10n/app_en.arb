@@ -1,0 +1,253 @@
+{
+  "@@locale": "en",
+  "appTitle": "JSON Viewer",
+  "tabView": "View",
+  "tabForm": "Form",
+  "tabText": "Text",
+  "tabSplit": "Split view",
+  "save": "Save",
+  "saveAs": "Save as…",
+  "saveAnyway": "Save anyway",
+  "saveInvalidTitle": "Save invalid JSON?",
+  "cancel": "Cancel",
+  "discard": "Discard",
+  "discardTitle": "Discard changes?",
+  "unsavedChanges": "\"{name}\" has unsaved changes.",
+  "@unsavedChanges": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "search": "Search",
+  "searchHint": "Search keys and values",
+  "closeSearch": "Close search",
+  "smallerText": "Smaller text",
+  "largerText": "Larger text",
+  "openFile": "Open file",
+  "lightTheme": "Light theme",
+  "darkTheme": "Dark theme",
+  "newDocument": "New",
+  "pasteJson": "Paste JSON",
+  "copyAll": "Copy all",
+  "treeView": "Tree view",
+  "friendlyKeyNames": "Friendly key names",
+  "expandAll": "Expand all",
+  "collapseAll": "Collapse all",
+  "foldAll": "Fold all",
+  "unfoldAll": "Unfold all",
+  "syncScrolling": "Sync scrolling",
+  "more": "More",
+  "welcomeText": "Open a .json file, create a new one or paste JSON.",
+  "invalidJson": "Invalid JSON",
+  "goToError": "Go to error",
+  "formNeedsValidJson": "The form needs valid JSON",
+  "fixInTextTab": "Fix in Text tab",
+  "undo": "Undo",
+  "redo": "Redo",
+  "couldNotOpen": "Could not open file: {error}",
+  "@couldNotOpen": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotSave": "Could not save file: {error}",
+  "@couldNotSave": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotApply": "Could not apply change: {error}",
+  "@couldNotApply": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "saved": "Saved {name}",
+  "@saved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cannotFormat": "Cannot format: {error}",
+  "@cannotFormat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cannotMinify": "Cannot minify: {error}",
+  "@cannotMinify": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "documentCopied": "Document copied",
+  "clipboardEmpty": "The clipboard is empty",
+  "clipboardNoJson": "The clipboard does not contain valid JSON",
+  "openAsText": "Open as text",
+  "valueCopied": "Value copied",
+  "pathCopied": "Path copied",
+  "keyCopied": "Key copied",
+  "copy": "Copy",
+  "close": "Close",
+  "copyValue": "Copy value",
+  "copyPath": "Copy path",
+  "copyKey": "Copy key",
+  "fold": "Fold",
+  "unfold": "Unfold",
+  "tabKey": "Tab",
+  "format": "Format",
+  "minify": "Minify",
+  "checking": "Checking…",
+  "validJson": "Valid JSON · {type}",
+  "@validJson": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "parseErrorAt": "Line {line}, column {column}: {message}",
+  "@parseErrorAt": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "errEmptyDocument": "Document is empty",
+  "errUnexpectedCharacter": "Unexpected character",
+  "errUnexpectedEnd": "Unexpected end of input",
+  "errUnterminatedString": "Unterminated string",
+  "keyCount": "{count, plural, =1{1 key} other{{count} keys}}",
+  "@keyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "itemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@itemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fieldCount": "{count, plural, =1{1 field} other{{count} fields}}",
+  "@fieldCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "typeObject": "object",
+  "typeArray": "array",
+  "typeString": "string",
+  "typeBoolean": "boolean",
+  "typeNumber": "number",
+  "typeNull": "null",
+  "kindText": "Text",
+  "kindNumber": "Number",
+  "kindBoolean": "Yes/No",
+  "kindGroup": "Group",
+  "kindList": "List",
+  "kindEmpty": "Empty (null)",
+  "yes": "Yes",
+  "no": "No",
+  "empty": "Empty",
+  "emptyList": "Empty list",
+  "showAll": "Show all {count} items",
+  "@showAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "singleValueDoc": "This document is a single value.",
+  "makeGroup": "Make it a group",
+  "makeList": "Make it a list",
+  "emptyListHint": "This list is empty. Add items below.",
+  "emptyDocHint": "This document is empty. Add fields below, or start with a list instead.",
+  "useGroupInstead": "Use a group instead",
+  "startWithList": "Start with a list",
+  "addField": "Add field",
+  "addItem": "Add item",
+  "addItemSameFields": "Add item (same fields)",
+  "addItemOtherType": "Add item of another type",
+  "emptySetValue": "Empty – set a value",
+  "fieldOptions": "Field options",
+  "options": "Options",
+  "rename": "Rename",
+  "changeType": "Change type",
+  "duplicate": "Duplicate",
+  "moveUp": "Move up",
+  "moveDown": "Move down",
+  "delete": "Delete",
+  "renameField": "Rename field",
+  "changeTypeConfirmTitle": "Change type?",
+  "changeTypeConfirmBody": "The {content} inside will be removed.",
+  "@changeTypeConfirmBody": {
+    "placeholders": {
+      "content": {
+        "type": "String"
+      }
+    }
+  },
+  "change": "Change",
+  "enterName": "Enter a name",
+  "nameExists": "\"{name}\" already exists",
+  "@nameExists": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "name": "Name",
+  "add": "Add",
+  "notANumber": "Not a number",
+  "textHint": "Text",
+  "about": "About",
+  "aboutText": "A simple app for reading and editing JSON files. No account, no ads, no tracking: your files never leave your device.",
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceCode": "Source code",
+  "licenses": "Open-source licenses",
+  "noAppForLink": "No app can open {url}",
+  "@noAppForLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  }
+}
