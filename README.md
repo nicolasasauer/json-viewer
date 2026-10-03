@@ -108,9 +108,8 @@ upload key, add these repository secrets (*Settings â†’ Secrets and variables â†
 | Secret | Value |
 | --- | --- |
 | `KEYSTORE_BASE64` | `base64 -w0 upload-keystore.jks` |
-| `KEYSTORE_PASSWORD` | keystore password |
+| `KEYSTORE_PASSWORD` | keystore password (also used as the key password) |
 | `KEY_ALIAS` | key alias, e.g. `upload` |
-| `KEY_PASSWORD` | optional, only if the key has its own password |
 
 Locally, create `android/key.properties` (git-ignored) with `storeFile`, `storePassword`,
 `keyAlias`, `keyPassword`.
