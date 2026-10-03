@@ -229,5 +229,25 @@
   "name": "Name",
   "add": "Add",
   "notANumber": "Not a number",
-  "textHint": "Text"
+  "textHint": "Text",
+  "about": "About",
+  "aboutText": "A simple app for reading and editing JSON files. No account, no ads, no tracking: your files never leave your device.",
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceCode": "Source code",
+  "licenses": "Open-source licenses",
+  "noAppForLink": "No app can open {url}",
+  "@noAppForLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  }
 }

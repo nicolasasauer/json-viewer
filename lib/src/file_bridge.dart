@@ -67,6 +67,10 @@ class FileBridge {
     return (name: result['name'] as String, uri: result['uri'] as String);
   }
 
+  /// Opens [url] in another app (usually the browser). False if none can.
+  Future<bool> openUrl(String url) async =>
+      await _channel.invokeMethod<bool>('openUrl', {'url': url}) ?? false;
+
   OpenedFile? _toFileOrNull(Object? raw) => raw == null ? null : _toFile(raw);
 
   OpenedFile _toFile(Object? raw) {

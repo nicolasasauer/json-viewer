@@ -1,17 +1,22 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:json_viewer/main.dart';
+import 'package:json_viewer/src/about.dart';
 import 'package:json_viewer/src/readable_view.dart';
 
 void main() {
   const channel = MethodChannel('json_viewer/file');
   final saved = <Map<Object?, Object?>>[];
+  final opened = <Object?>[];
   const sample = '{"user": {"name": "Ada", "age": 36}, "tags": ["a"]}';
   var content = sample;
 
   setUp(() {
     saved.clear();
+    opened.clear();
     content = sample;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
@@ -22,6 +27,9 @@ void main() {
                 'content': content,
                 'uri': 'content://test/sample.json',
               };
+            case 'openUrl':
+              opened.add((call.arguments as Map)['url']);
+              return true;
             case 'saveFile':
               saved.add(call.arguments as Map<Object?, Object?>);
               return null;
@@ -231,5 +239,29 @@ void main() {
     expect(find.text('User'), findsOneWidget);
     expect(find.text('Name'), findsOneWidget);
     expect(find.textContaining('Objekt'), findsOneWidget); // summary line
+  });
+
+  testWidgets('about dialog links to the source code', (tester) async {
+    await tester.pumpWidget(const JsonViewerApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('About'));
+    await tester.pumpAndSettle();
+    expect(find.text('Version $appVersion'), findsOneWidget);
+
+    await tester.tap(find.text('Source code'));
+    await tester.pumpAndSettle();
+    expect(opened, [sourceCodeUrl]);
+  });
+
+  test('appVersion matches pubspec.yaml', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    final version = RegExp(
+      r'^version: ([^+\s]+)',
+      multiLine: true,
+    ).firstMatch(pubspec)!.group(1);
+    expect(appVersion, version);
   });
 }

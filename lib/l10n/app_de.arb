@@ -118,5 +118,11 @@
   "name": "Name",
   "add": "Hinzufügen",
   "notANumber": "Keine Zahl",
-  "textHint": "Text"
+  "textHint": "Text",
+  "about": "Über die App",
+  "aboutText": "Eine einfache App zum Lesen und Bearbeiten von JSON-Dateien. Kein Konto, keine Werbung, kein Tracking: Deine Dateien verlassen nie dein Gerät.",
+  "version": "Version {version}",
+  "sourceCode": "Quellcode",
+  "licenses": "Open-Source-Lizenzen",
+  "noAppForLink": "Keine App kann {url} öffnen"
 }

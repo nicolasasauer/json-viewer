@@ -416,4 +416,27 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get textHint => 'Text';
+
+  @override
+  String get about => 'Über die App';
+
+  @override
+  String get aboutText =>
+      'Eine einfache App zum Lesen und Bearbeiten von JSON-Dateien. Kein Konto, keine Werbung, kein Tracking: Deine Dateien verlassen nie dein Gerät.';
+
+  @override
+  String version(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get sourceCode => 'Quellcode';
+
+  @override
+  String get licenses => 'Open-Source-Lizenzen';
+
+  @override
+  String noAppForLink(String url) {
+    return 'Keine App kann $url öffnen';
+  }
 }

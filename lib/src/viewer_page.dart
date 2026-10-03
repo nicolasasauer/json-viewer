@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'about.dart';
 import 'file_bridge.dart';
 import 'form_editor.dart';
 import 'json_edit.dart';
@@ -399,6 +400,14 @@ class _ViewerPageState extends State<ViewerPage> {
     _editorFocus.requestFocus();
   }
 
+  Future<void> _openUrl(String url) async {
+    try {
+      if (!await _bridge.openUrl(url)) _snack(_l.noAppForLink(url));
+    } catch (e) {
+      _snack(_l.noAppForLink(url));
+    }
+  }
+
   void _changeFontSize(double delta) =>
       setState(() => _fontSize = (_fontSize + delta).clamp(10, 28));
 
@@ -711,6 +720,16 @@ class _ViewerPageState extends State<ViewerPage> {
         ),
       ],
     ];
+    items.addAll([
+      const PopupMenuDivider(),
+      PopupMenuItem(
+        value: () => showAboutAppDialog(context, onOpenUrl: _openUrl),
+        child: ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: Text(_l.about),
+        ),
+      ),
+    ]);
     return PopupMenuButton<VoidCallback>(
       tooltip: _l.more,
       icon: Icon(Icons.more_vert, semanticLabel: _l.more),

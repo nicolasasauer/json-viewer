@@ -811,6 +811,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Text'**
   String get textHint;
+
+  /// No description provided for @about.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
+  /// No description provided for @aboutText.
+  ///
+  /// In en, this message translates to:
+  /// **'A simple app for reading and editing JSON files. No account, no ads, no tracking: your files never leave your device.'**
+  String get aboutText;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String version(String version);
+
+  /// No description provided for @sourceCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get sourceCode;
+
+  /// No description provided for @licenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licenses'**
+  String get licenses;
+
+  /// No description provided for @noAppForLink.
+  ///
+  /// In en, this message translates to:
+  /// **'No app can open {url}'**
+  String noAppForLink(String url);
 }
 
 class _AppLocalizationsDelegate
