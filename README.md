@@ -6,7 +6,13 @@ JSON files in file managers, mail apps and so on.
 
 ## Features
 
-- **View**: collapsible tree with syntax colors, a summary line (type, number of keys, size)
+- **Readable view** (default): the JSON rendered like a document instead of code
+  - objects become sections with headings (`studyProgram` → "Study program"), fields become label/value rows
+  - lists of similar objects become tables, other lists of objects become cards (titled by `title`, `name`, …),
+    short value lists become chips
+  - no quotes or brackets: booleans as ✓/✗, colors (`#4F7CAC`) with a swatch, ISO dates formatted, `null` as —
+  - sections collapse on tap; long-press anything to copy value, path or key
+- **Tree view**: collapsible tree with syntax colors, a summary line (type, number of keys, size)
   - tap an object or array to expand or collapse it, tap a value to see it in full
   - long-press any node to copy its value, path (`$.users[0].name`) or key
   - search keys and values (matching nodes are highlighted and their parents expanded)
@@ -14,7 +20,8 @@ JSON files in file managers, mail apps and so on.
 - **Edit**: plain-text editor with syntax highlighting, live validation (line and column
   of the error, tap to jump there), a symbol bar for `{ } [ ] " : ,` and Format / Minify
 - **Split view**: editor and tree side by side (on a tablet) or stacked (on a phone), updating live;
-  scrolling one pane scrolls the other to the same relative position (can be turned off in the menu)
+  scrolling one pane scrolls the other to the same relative position (can be turned off in the menu).
+  Tapping a value in the rendered pane selects it in the text
 - Save back to the opened file, *Save as…*, *New*, *Open file*
 - Asks before throwing away unsaved changes
 - A− / A+ text size, light and dark theme
@@ -27,7 +34,9 @@ JSON files in file managers, mail apps and so on.
 | Reading intents, SAF open / save as, writing back | `android/app/src/main/kotlin/com/nicolas/json_viewer/MainActivity.kt` |
 | Platform channel `json_viewer/file` (Dart side) | `lib/src/file_bridge.dart` |
 | Screen, modes, save / discard logic | `lib/src/viewer_page.dart` |
+| Readable (rendered) view | `lib/src/readable_view.dart` |
 | Tree view, search | `lib/src/json_tree_view.dart` |
+| Path → text position (jump from view to editor) | `lib/src/json_locator.dart` |
 | Editor, symbol bar, status line | `lib/src/json_editor.dart` |
 | Parsing, errors, paths, formatting | `lib/src/json_tools.dart` |
 | Syntax highlighting | `lib/src/json_highlighter.dart` |

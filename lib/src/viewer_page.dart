@@ -6,12 +6,14 @@ import 'package:flutter/services.dart';
 import 'file_bridge.dart';
 import 'json_editor.dart';
 import 'json_highlighter.dart';
+import 'json_locator.dart';
 import 'json_tools.dart';
 import 'json_tree_view.dart';
+import 'readable_view.dart';
 
 enum ViewMode { view, edit, split }
 
-enum ViewStyle { tree, text }
+enum ViewStyle { readable, tree, text }
 
 enum _DiscardChoice { cancel, discard, save }
 
@@ -40,7 +42,8 @@ class _ViewerPageState extends State<ViewerPage> {
   String _savedText = '';
 
   ViewMode _mode = ViewMode.view;
-  ViewStyle _style = ViewStyle.tree;
+  ViewStyle _style = ViewStyle.readable;
+  bool _humanizeKeys = true;
   double _fontSize = 14;
   bool _searching = false;
   bool _syncScroll = true;
@@ -303,6 +306,22 @@ class _ViewerPageState extends State<ViewerPage> {
     _editorFocus.requestFocus();
   }
 
+  /// Split view: selects the value at [path] in the editor and scrolls to it.
+  void _revealInEditor(String path) {
+    final text = _controller.text;
+    if (!_parseNow().isValid) return;
+    final range = locateJsonValues(text)[path];
+    if (range == null) return;
+    // Containers: put the cursor at the opening bracket; values: select them.
+    final first = text.codeUnitAt(range.start);
+    final isContainer = first == 0x7B || first == 0x5B;
+    _scrollLeader = null;
+    _controller.selection = isContainer
+        ? TextSelection.collapsed(offset: range.start)
+        : TextSelection(baseOffset: range.start, extentOffset: range.end);
+    _editorFocus.requestFocus();
+  }
+
   void _changeFontSize(double delta) =>
       setState(() => _fontSize = (_fontSize + delta).clamp(10, 28));
 
@@ -437,7 +456,7 @@ class _ViewerPageState extends State<ViewerPage> {
         if (treeAvailable && wide)
           IconButton(
             tooltip: 'Search',
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search, semanticLabel: 'Search'),
             onPressed: () => setState(() => _searching = !_searching),
           ),
         if (wide) ...[
@@ -514,24 +533,28 @@ class _ViewerPageState extends State<ViewerPage> {
             title: Text('Search'),
           ),
         ),
-      if (valid && _mode != ViewMode.edit)
-        PopupMenuItem(
-          value: () => setState(
-            () => _style = _style == ViewStyle.tree
-                ? ViewStyle.text
-                : ViewStyle.tree,
+      if (valid && _mode != ViewMode.edit) ...[
+        for (final (style, title) in const [
+          (ViewStyle.readable, 'Readable view'),
+          (ViewStyle.tree, 'Tree view'),
+          (ViewStyle.text, 'Text view'),
+        ])
+          CheckedPopupMenuItem(
+            value: () => setState(() {
+              _style = style;
+              if (style != ViewStyle.tree) _searching = false;
+            }),
+            checked: _style == style,
+            child: Text(title),
           ),
-          child: ListTile(
-            leading: Icon(
-              _style == ViewStyle.tree
-                  ? Icons.notes
-                  : Icons.account_tree_outlined,
-            ),
-            title: Text(
-              _style == ViewStyle.tree ? 'Show as text' : 'Show as tree',
-            ),
+        if (_style == ViewStyle.readable)
+          CheckedPopupMenuItem(
+            value: () => setState(() => _humanizeKeys = !_humanizeKeys),
+            checked: _humanizeKeys,
+            child: const Text('Friendly key names'),
           ),
-        ),
+        const PopupMenuDivider(),
+      ],
       if (treeAvailable) ...[
         PopupMenuItem(
           value: () => _tree.expandAll(_parsed.value),
@@ -640,7 +663,9 @@ class _ViewerPageState extends State<ViewerPage> {
         return Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
+            constraints: BoxConstraints(
+              maxWidth: _style == ViewStyle.readable ? 960 : 1100,
+            ),
             child: _buildViewer(),
           ),
         );
@@ -797,17 +822,30 @@ class _ViewerPageState extends State<ViewerPage> {
       );
     }
 
+    final split = _mode == ViewMode.split;
+    if (_style == ViewStyle.readable) {
+      return ReadableJsonView(
+        value: value,
+        fontSize: _fontSize,
+        humanizeKeys: _humanizeKeys,
+        header: _buildSummary(value, horizontalPadding: 4),
+        scrollController: split ? _viewerScroll : null,
+        onNodeTap: split ? _revealInEditor : null,
+      );
+    }
+
     return JsonTreeView(
       value: value,
       controller: _tree,
       fontSize: _fontSize,
       searchQuery: _searching ? _searchController.text : '',
       header: _buildSummary(value),
-      scrollController: _mode == ViewMode.split ? _viewerScroll : null,
+      scrollController: split ? _viewerScroll : null,
+      onNodeTap: split ? _revealInEditor : null,
     );
   }
 
-  Widget _buildSummary(Object? value) {
+  Widget _buildSummary(Object? value, {double horizontalPadding = 16}) {
     final theme = Theme.of(context);
     final parts = [
       typeName(value),
@@ -815,7 +853,7 @@ class _ViewerPageState extends State<ViewerPage> {
       formatBytes(_controller.text.length),
     ].where((s) => s.isNotEmpty);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 8),
       child: Text(
         parts.join(' · '),
         style: theme.textTheme.labelMedium?.copyWith(

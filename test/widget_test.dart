@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:json_viewer/main.dart';
-import 'package:json_viewer/src/json_tree_view.dart';
+import 'package:json_viewer/src/readable_view.dart';
 
 void main() {
   const channel = MethodChannel('json_viewer/file');
@@ -35,17 +35,45 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
-  testWidgets('opens initial file as tree and toggles nodes', (tester) async {
+  testWidgets('opens initial file in readable view', (tester) async {
     await tester.pumpWidget(const JsonViewerApp());
     await tester.pumpAndSettle();
 
     expect(find.text('sample.json'), findsOneWidget);
+    expect(find.text('User'), findsOneWidget); // section heading
+    expect(find.text('Ada'), findsOneWidget); // no quotes
+    expect(find.text('36'), findsOneWidget);
+  });
+
+  testWidgets('tree view toggles nodes', (tester) async {
+    await tester.pumpWidget(const JsonViewerApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tree view'));
+    await tester.pumpAndSettle();
+
     // Top level is expanded, so the nested "name" is visible.
     expect(find.textContaining('"Ada"'), findsOneWidget);
-
     await tester.tap(find.textContaining('"user"'));
     await tester.pumpAndSettle();
     expect(find.textContaining('"Ada"'), findsNothing);
+  });
+
+  testWidgets('tapping a value in split view selects it in the editor', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const JsonViewerApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.vertical_split_outlined));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ada'));
+    await tester.pumpAndSettle();
+    final editor = tester.widget<TextField>(find.byType(TextField));
+    final selection = editor.controller!.selection;
+    expect(selection.textInside(sample), '"Ada"');
   });
 
   testWidgets('edit, validate and save', (tester) async {
@@ -80,18 +108,18 @@ void main() {
     await tester.tap(find.byIcon(Icons.vertical_split_outlined));
     await tester.pumpAndSettle();
 
-    ScrollPosition treePosition() => tester
+    ScrollPosition viewerPosition() => tester
         .state<ScrollableState>(
           find.descendant(
-            of: find.byType(JsonTreeView),
+            of: find.byType(ReadableJsonView),
             matching: find.byType(Scrollable),
           ),
         )
         .position;
 
-    expect(treePosition().pixels, 0);
+    expect(viewerPosition().pixels, 0);
     await tester.drag(find.byType(TextField), const Offset(0, -600));
     await tester.pumpAndSettle();
-    expect(treePosition().pixels, greaterThan(0));
+    expect(viewerPosition().pixels, greaterThan(0));
   });
 }

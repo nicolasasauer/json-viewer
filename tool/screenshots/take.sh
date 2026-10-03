@@ -51,27 +51,29 @@ adb shell settings put system user_rotation 0
 # --- Phone, light ------------------------------------------------------------
 adb shell cmd uimode night no
 open_sample
-shot 01-phone-tree-light
+shot 01-phone-readable-light
+adb shell input swipe 540 1900 540 700 400; sleep 2
+shot 02-phone-readable-scrolled-light
 
-tap "More" && tap "Expand all" && shot 02-phone-expanded-light
+tap "More" && tap "Tree view" && tap "More" && tap "Expand all" && shot 03-phone-tree-light
 
-tap "Edit" && shot 03-phone-editor-light
+tap "Edit" && shot 04-phone-editor-light
 
 # --- Phone, dark -------------------------------------------------------------
 adb shell cmd uimode night yes
 open_sample
-shot 04-phone-tree-dark
-
-tap "More" && tap "Search" && adb shell input text "Algebra" && sleep 2 && shot 05-phone-search-dark
-adb shell input keyevent KEYCODE_BACK; sleep 1
-
+shot 05-phone-readable-dark
 tap "Split view" && shot 06-phone-split-dark
 
 # --- Landscape (wide layout), dark --------------------------------------------
 adb shell settings put system user_rotation 1
 open_sample
-shot 07-landscape-view-dark
+shot 07-landscape-readable-dark
 tap "Split view" && shot 08-landscape-split-dark
+tap "Programmierung" contains && sleep 1 && shot 09-landscape-split-jump-dark
+adb shell input keyevent KEYCODE_BACK; sleep 1
+tap "More" && tap "Tree view" && tap "Search" && adb shell input text "Algebra" && sleep 2 && shot 10-landscape-tree-search-dark
+adb shell input keyevent KEYCODE_BACK; sleep 1
 
 adb shell settings put system user_rotation 0
 adb shell cmd uimode night no
@@ -81,6 +83,6 @@ adb shell input keyevent KEYCODE_HOME
 sleep 2
 adb shell input swipe 540 1800 540 600 300
 sleep 2
-shot 09-app-drawer
+shot 11-app-drawer
 
 ls -la "$OUT"

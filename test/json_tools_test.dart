@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:json_viewer/src/json_highlighter.dart';
+import 'package:json_viewer/src/json_locator.dart';
 import 'package:json_viewer/src/json_tools.dart';
 import 'package:json_viewer/src/json_tree_view.dart';
+import 'package:json_viewer/src/readable_view.dart';
 
 void main() {
   group('parseJson', () {
@@ -82,5 +84,29 @@ void main() {
       expect(r.matches, {r'$.list[0].name'});
       expect(r.ancestors, {r'$', r'$.list', r'$.list[0]'});
     });
+  });
+
+  test('humanizeKey', () {
+    expect(humanizeKey('studyProgram'), 'Study program');
+    expect(humanizeKey('target_ECTS'), 'Target ECTS');
+    expect(humanizeKey('HTMLParser'), 'HTML parser');
+    expect(humanizeKey('exported-at'), 'Exported at');
+    expect(humanizeKey('_'), '_');
+  });
+
+  test('formatIsoDate', () {
+    expect(formatIsoDate('2025-02-12'), '12 Feb 2025');
+    expect(formatIsoDate('2026-10-03T14:10:00Z'), '3 Oct 2026, 14:10 UTC');
+    expect(formatIsoDate('WS 2024/25'), isNull);
+  });
+
+  test('locateJsonValues maps paths to source ranges', () {
+    const src = '{\n  "a": [1, {"b c": "x\\"y"}],\n  "d": null\n}';
+    final ranges = locateJsonValues(src);
+    String at(String path) => ranges[path]!.textInside(src);
+    expect(at(r'$'), src);
+    expect(at(r'$.a[0]'), '1');
+    expect(at(r'$.a[1]["b c"]'), r'"x\"y"');
+    expect(at(r'$.d'), 'null');
   });
 }

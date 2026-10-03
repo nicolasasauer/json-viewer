@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'json_highlighter.dart';
 import 'json_tools.dart';
+import 'node_actions.dart';
 
 /// One visible line in the tree.
 class JsonTreeRow {
@@ -183,6 +183,7 @@ class JsonTreeView extends StatefulWidget {
     this.searchQuery = '',
     this.header,
     this.scrollController,
+    this.onNodeTap,
   });
 
   final Object? value;
@@ -191,6 +192,9 @@ class JsonTreeView extends StatefulWidget {
   final String searchQuery;
   final Widget? header;
   final ScrollController? scrollController;
+
+  /// Called when a value is tapped; defaults to showing the value in a dialog.
+  final void Function(String path)? onNodeTap;
 
   @override
   State<JsonTreeView> createState() => _JsonTreeViewState();
@@ -242,6 +246,7 @@ class _JsonTreeViewState extends State<JsonTreeView> {
               highlighted: searching && search.matches.contains(row.path),
               fontSize: widget.fontSize,
               onToggle: () => widget.controller.toggle(row.path),
+              onNodeTap: widget.onNodeTap,
             );
           },
         );
@@ -257,6 +262,7 @@ class _JsonRowTile extends StatelessWidget {
     required this.highlighted,
     required this.fontSize,
     required this.onToggle,
+    this.onNodeTap,
   });
 
   final JsonTreeRow row;
@@ -264,6 +270,7 @@ class _JsonRowTile extends StatelessWidget {
   final bool highlighted;
   final double fontSize;
   final VoidCallback onToggle;
+  final void Function(String path)? onNodeTap;
 
   static const _indent = 16.0;
 
@@ -305,8 +312,22 @@ class _JsonRowTile extends StatelessWidget {
           ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.6)
           : Colors.transparent,
       child: InkWell(
-        onTap: row.isContainer ? onToggle : () => _showValue(context),
-        onLongPress: () => _showActions(context),
+        onTap: row.isContainer
+            ? onToggle
+            : () => onNodeTap != null
+                  ? onNodeTap!(row.path)
+                  : showJsonValue(
+                      context,
+                      path: row.path,
+                      value: row.value,
+                      fontSize: fontSize,
+                    ),
+        onLongPress: () => showJsonNodeActions(
+          context,
+          path: row.path,
+          value: row.value,
+          key: row.isIndex ? null : row.label,
+        ),
         child: Padding(
           padding: EdgeInsets.only(
             left: 8 + row.depth * _indent,
@@ -381,97 +402,5 @@ class _JsonRowTile extends StatelessWidget {
         style: TextStyle(color: colors.nullValue),
       ),
     };
-  }
-
-  void _copy(BuildContext context, String text, String what) {
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$what copied')));
-  }
-
-  void _showValue(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          row.path,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
-        ),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            copyText(row.value),
-            style: TextStyle(fontFamily: 'monospace', fontSize: fontSize),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _copy(context, copyText(row.value), 'Value');
-            },
-            child: const Text('Copy'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showActions(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text(
-                row.path,
-                style: const TextStyle(fontFamily: 'monospace'),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                [
-                  typeName(row.value),
-                  describeContainer(row.value),
-                ].where((s) => s.isNotEmpty).join(' · '),
-              ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.content_copy),
-              title: const Text('Copy value'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _copy(context, copyText(row.value), 'Value');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.route_outlined),
-              title: const Text('Copy path'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _copy(context, row.path, 'Path');
-              },
-            ),
-            if (row.label != null && !row.isIndex)
-              ListTile(
-                leading: const Icon(Icons.key_outlined),
-                title: const Text('Copy key'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _copy(context, row.label!, 'Key');
-                },
-              ),
-          ],
-        ),
-      ),
-    );
   }
 }
