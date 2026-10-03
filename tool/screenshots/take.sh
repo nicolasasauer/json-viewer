@@ -9,8 +9,20 @@ APK=build/app/outputs/flutter-apk/app-debug.apk
 DIR=$(cd "$(dirname "$0")" && pwd)
 OUT=${SCREENSHOT_DIR:-docs/screenshots}
 mkdir -p "$OUT"
+rm -f "$OUT"/*.png  # never keep stale screenshots from an earlier run
 
-shot() { adb exec-out screencap -p > "$OUT/$1.png"; echo "captured $1"; }
+# Dismisses "X isn't responding" dialogs that slow CI emulators like to show.
+dismiss_anr() {
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+  adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1
+  if grep -q "isn't responding" /tmp/ui.xml 2>/dev/null; then
+    local pos
+    pos=$(python3 "$DIR/ui.py" /tmp/ui.xml "Wait") && adb shell input tap $pos
+    sleep 2
+  fi
+}
+
+shot() { dismiss_anr; adb exec-out screencap -p > "$OUT/$1.png"; echo "captured $1"; }
 
 # Taps the element with the given label (content-desc or text).
 tap() {
@@ -44,6 +56,10 @@ open_sample() {
     -d "file:///data/user/0/$PKG/files/studiplan.json"
   sleep 8
 }
+
+# Let the freshly booted emulator settle and hide ANR/crash dialogs.
+adb shell settings put global hide_error_dialogs 1
+sleep 30
 
 adb install -r "$APK"
 
@@ -97,7 +113,8 @@ adb shell cmd uimode night no
 
 # --- Launcher icon -----------------------------------------------------------
 adb shell input keyevent KEYCODE_HOME
-sleep 2
+sleep 4
+dismiss_anr
 adb shell input swipe 540 1800 540 600 300
 sleep 2
 shot 11-app-drawer
