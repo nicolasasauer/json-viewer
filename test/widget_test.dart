@@ -219,4 +219,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Unfold'), findsNothing);
   });
+
+  testWidgets('follows the system language (German)', (tester) async {
+    tester.platformDispatcher.localesTestValue = const [Locale('de', 'DE')];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    await tester.pumpWidget(const JsonViewerApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Formular'), findsOneWidget);
+    expect(find.text('Benutzer'), findsNothing); // data is not translated
+    expect(find.text('User'), findsOneWidget);
+    expect(find.text('Name'), findsOneWidget);
+    expect(find.textContaining('Objekt'), findsOneWidget); // summary line
+  });
 }

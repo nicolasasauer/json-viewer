@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'l10n.dart';
+
 /// A JSON syntax error with a human-friendly position.
 class JsonParseError {
   const JsonParseError(this.message, {this.offset, this.line, this.column});
@@ -14,7 +16,22 @@ class JsonParseError {
   @override
   String toString() =>
       line == null ? message : 'Line $line, column $column: $message';
+
+  /// The error in the user's language. The parser's English messages are
+  /// translated where known.
+  String describe(AppLocalizations l) {
+    final text = switch (message) {
+      emptyDocumentMessage => l.errEmptyDocument,
+      'Unexpected character' => l.errUnexpectedCharacter,
+      'Unexpected end of input' => l.errUnexpectedEnd,
+      'Unterminated string' => l.errUnterminatedString,
+      _ => message,
+    };
+    return line == null ? text : l.parseErrorAt(line!, column!, text);
+  }
 }
+
+const emptyDocumentMessage = 'Document is empty';
 
 /// Result of parsing a JSON document.
 class JsonParseResult {
@@ -29,7 +46,7 @@ class JsonParseResult {
 
 JsonParseResult parseJson(String source) {
   if (source.trim().isEmpty) {
-    return const JsonParseResult.invalid(JsonParseError('Document is empty'));
+    return const JsonParseResult.invalid(JsonParseError(emptyDocumentMessage));
   }
   try {
     return JsonParseResult.valid(jsonDecode(source));
@@ -76,23 +93,19 @@ String childPath(String parent, Object keyOrIndex) {
 }
 
 /// Short description of a container, e.g. "3 keys" or "1 item".
-String describeContainer(Object? value) {
-  if (value is Map) {
-    return '${value.length} ${value.length == 1 ? 'key' : 'keys'}';
-  }
-  if (value is List) {
-    return '${value.length} ${value.length == 1 ? 'item' : 'items'}';
-  }
+String describeContainer(Object? value, AppLocalizations l) {
+  if (value is Map) return l.keyCount(value.length);
+  if (value is List) return l.itemCount(value.length);
   return '';
 }
 
-String typeName(Object? value) => switch (value) {
-  null => 'null',
-  Map() => 'object',
-  List() => 'array',
-  String() => 'string',
-  bool() => 'boolean',
-  num() => 'number',
+String typeName(Object? value, AppLocalizations l) => switch (value) {
+  null => l.typeNull,
+  Map() => l.typeObject,
+  List() => l.typeArray,
+  String() => l.typeString,
+  bool() => l.typeBoolean,
+  num() => l.typeNumber,
   _ => value.runtimeType.toString(),
 };
 

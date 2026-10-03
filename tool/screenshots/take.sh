@@ -117,6 +117,13 @@ adb shell input keyevent KEYCODE_BACK; sleep 1
 rotate 0
 adb shell cmd uimode night no
 
+# --- German (per-app language, Android 13+) -----------------------------------
+adb shell cmd locale set-app-locales $PKG --locales de-DE
+open_sample
+shot 14-phone-view-de
+tap "Formular" && shot 15-phone-form-de
+adb shell cmd locale set-app-locales $PKG --locales ""
+
 # --- Launcher icon -----------------------------------------------------------
 adb shell input keyevent KEYCODE_HOME
 sleep 4

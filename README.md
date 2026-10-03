@@ -51,6 +51,8 @@ Three tabs at the top, plus split view on wide screens:
   *Paste JSON* (new document from the clipboard), *Save*, *Save as…*
 - Asks before throwing away unsaved changes
 - A− / A+ text size, light and dark theme
+- German and English, following the system language (Android 13+: also selectable per app in
+  the system settings); texts live in `lib/l10n/app_de.arb` / `app_en.arb`
 
 ## How it works
 

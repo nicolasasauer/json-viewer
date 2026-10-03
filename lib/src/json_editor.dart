@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart' show RenderEditable;
 
 import 'json_text_controller.dart';
 import 'json_tools.dart';
+import 'l10n.dart';
 
 /// Plain-text JSON editor with a symbol bar and a validation status line.
 class JsonEditor extends StatelessWidget {
@@ -264,7 +265,9 @@ class _FoldableTextFieldState extends State<_FoldableTextField> {
                   m.folded ? Icons.chevron_right : Icons.expand_more,
                   size: 18,
                   color: m.folded ? scheme.primary : scheme.outline,
-                  semanticLabel: m.folded ? 'Unfold' : 'Fold',
+                  semanticLabel: m.folded
+                      ? context.l10n.unfold
+                      : context.l10n.fold,
                 ),
               ),
             ),
@@ -309,7 +312,7 @@ class _SymbolBar extends StatelessWidget {
           symbol('" "', '""', back: 1),
           symbol(':', ': '),
           symbol(',', ','),
-          symbol('Tab', '  '),
+          symbol(context.l10n.tabKey, '  '),
           symbol('true', 'true'),
           symbol('false', 'false'),
           symbol('null', 'null'),
@@ -317,12 +320,12 @@ class _SymbolBar extends StatelessWidget {
           TextButton.icon(
             onPressed: onFormat,
             icon: const Icon(Icons.format_indent_increase, size: 18),
-            label: const Text('Format'),
+            label: Text(context.l10n.format),
           ),
           TextButton.icon(
             onPressed: onMinify,
             icon: const Icon(Icons.compress, size: 18),
-            label: const Text('Minify'),
+            label: Text(context.l10n.minify),
           ),
         ],
       ),
@@ -356,10 +359,10 @@ class _StatusLine extends StatelessWidget {
         ? Icons.check_circle_outline
         : Icons.error_outline;
     final text = !upToDate
-        ? 'Checking…'
+        ? context.l10n.checking
         : valid
-        ? 'Valid JSON · ${typeName(parseResult.value)}'
-        : '${parseResult.error}';
+        ? context.l10n.validJson(typeName(parseResult.value, context.l10n))
+        : parseResult.error!.describe(context.l10n);
 
     return Material(
       color: theme.colorScheme.surfaceContainer,
