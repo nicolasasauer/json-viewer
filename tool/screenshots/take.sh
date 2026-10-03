@@ -96,6 +96,7 @@ tap "Add field" && sleep 1 && shot 05-phone-form-add-field-light
 adb shell input keyevent KEYCODE_BACK; sleep 1
 adb shell input keyevent KEYCODE_BACK; sleep 1
 tap "Text" && shot 06-phone-text-light
+tap "More" && tap "Fold all" && shot 06b-phone-text-folded-light
 
 # --- Phone, dark -------------------------------------------------------------
 adb shell cmd uimode night yes

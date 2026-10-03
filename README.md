@@ -41,6 +41,8 @@ Three tabs at the top, plus split view on wide screens:
   - per field/item menu: rename, change type, duplicate, move up/down, delete; undo/redo
   - keeps the file's indentation style (spaces, tabs or minified)
 - **Text**
+  - fold `{…}` / `[…]` blocks with the arrows on the left (like VS Code); tap `…` to unfold,
+    *Fold all* / *Unfold all* in ⋮. Folding only changes the display, never the file
   - live validation with line and column of the error (tap to jump there)
   - symbol bar for `{ } [ ] " : ,` and Format / Minify
 - **Split**: scrolling one side scrolls the other (can be turned off in ⋮); tapping a value in the
@@ -66,6 +68,7 @@ Three tabs at the top, plus split view on wide screens:
 | Editor, symbol bar, status line | `lib/src/json_editor.dart` |
 | Parsing, errors, paths, formatting | `lib/src/json_tools.dart` |
 | Syntax highlighting | `lib/src/json_highlighter.dart` |
+| Editor text controller: highlighting + folding | `lib/src/json_text_controller.dart` |
 
 The app has no third-party Dart packages. File access goes through the Android
 Storage Access Framework directly, so a file opened via *Open file* or

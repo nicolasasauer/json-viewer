@@ -151,33 +151,3 @@ bool _isWordChar(int c) =>
 
 bool _isPunctuation(int c) =>
     c == 0x7B || c == 0x7D || c == 0x5B || c == 0x5D || c == 0x3A || c == 0x2C;
-
-/// A [TextEditingController] that syntax-highlights JSON while editing.
-class JsonEditingController extends TextEditingController {
-  JsonEditingController({super.text});
-
-  /// Above this size highlighting is skipped to keep typing responsive.
-  static const highlightLimit = 200000;
-
-  @override
-  TextSpan buildTextSpan({
-    required BuildContext context,
-    TextStyle? style,
-    required bool withComposing,
-  }) {
-    final composing = value.composing;
-    if (text.length > highlightLimit ||
-        (withComposing && composing.isValid && !composing.isCollapsed)) {
-      return super.buildTextSpan(
-        context: context,
-        style: style,
-        withComposing: withComposing,
-      );
-    }
-    return highlightJson(
-      text,
-      JsonColors.of(context),
-      style ?? const TextStyle(),
-    );
-  }
-}

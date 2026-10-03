@@ -197,4 +197,26 @@ void main() {
     expect(find.byTooltip('Split view'), findsNothing);
     expect(find.byTooltip('Form'), findsOneWidget);
   });
+
+  testWidgets('fold arrows in the text tab fold a block', (tester) async {
+    content = '{\n  "user": {\n    "name": "Ada"\n  }\n}';
+    await tester.pumpWidget(const JsonViewerApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Text'));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Fold'), findsNWidgets(2));
+    await tester.tap(find.bySemanticsLabel('Fold').last);
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Unfold'), findsOneWidget);
+    expect(find.text('…'), findsOneWidget);
+
+    // The document itself is unchanged.
+    final editor = tester.widget<TextField>(find.byType(TextField));
+    expect(editor.controller!.text, content);
+
+    await tester.tap(find.text('…'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Unfold'), findsNothing);
+  });
 }

@@ -7,7 +7,7 @@ import 'file_bridge.dart';
 import 'form_editor.dart';
 import 'json_edit.dart';
 import 'json_editor.dart';
-import 'json_highlighter.dart';
+import 'json_text_controller.dart';
 import 'json_locator.dart';
 import 'json_tools.dart';
 import 'json_tree_view.dart';
@@ -654,6 +654,23 @@ class _ViewerPageState extends State<ViewerPage> {
           child: const ListTile(
             leading: Icon(Icons.unfold_less),
             title: Text('Collapse all'),
+          ),
+        ),
+      ],
+      if (_hasDocument &&
+          (_shown == ViewMode.text || _shown == ViewMode.split)) ...[
+        PopupMenuItem(
+          value: _controller.foldAll,
+          child: const ListTile(
+            leading: Icon(Icons.unfold_less),
+            title: Text('Fold all'),
+          ),
+        ),
+        PopupMenuItem(
+          value: _controller.unfoldAll,
+          child: const ListTile(
+            leading: Icon(Icons.unfold_more),
+            title: Text('Unfold all'),
           ),
         ),
       ],
