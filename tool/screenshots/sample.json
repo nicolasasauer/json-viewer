@@ -1,0 +1,59 @@
+{
+  "version": 3,
+  "exportedAt": "2026-10-03T14:10:00Z",
+  "studyProgram": {
+    "name": "Informatik B.Sc.",
+    "university": "TU Beispielstadt",
+    "targetEcts": 180,
+    "weightedAverage": true
+  },
+  "semesters": [
+    {
+      "id": "ws24",
+      "label": "WS 2024/25",
+      "modules": [
+        {
+          "title": "Analysis I",
+          "ects": 9,
+          "turnus": "WS",
+          "passed": true,
+          "grade": 1.7,
+          "oral": false,
+          "exam": "2025-02-12",
+          "color": "#4F7CAC"
+        },
+        {
+          "title": "Programmierung",
+          "ects": 8,
+          "turnus": "WS",
+          "passed": true,
+          "grade": 1.3,
+          "oral": false,
+          "exam": "2025-02-20",
+          "color": "#7CB342"
+        }
+      ]
+    },
+    {
+      "id": "ss25",
+      "label": "SS 2025",
+      "modules": [
+        {
+          "title": "Lineare Algebra",
+          "ects": 9,
+          "turnus": "SS",
+          "passed": false,
+          "grade": null,
+          "oral": true,
+          "exam": "2025-07-18",
+          "color": "#F4511E"
+        }
+      ]
+    }
+  ],
+  "parking": [
+    { "title": "Compilerbau", "ects": 6, "turnus": "WS" },
+    { "title": "Datenbanken", "ects": 6, "turnus": "both" }
+  ],
+  "sync": { "enabled": false, "server": null }
+}

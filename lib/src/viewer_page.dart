@@ -31,6 +31,8 @@ class _ViewerPageState extends State<ViewerPage> {
   final _editorFocus = FocusNode();
   final _tree = JsonTreeController();
   final _searchController = TextEditingController();
+  final _editorScroll = ScrollController();
+  final _viewerScroll = ScrollController();
 
   bool _hasDocument = false;
   String _fileName = 'Untitled.json';
@@ -41,6 +43,10 @@ class _ViewerPageState extends State<ViewerPage> {
   ViewStyle _style = ViewStyle.tree;
   double _fontSize = 14;
   bool _searching = false;
+  bool _syncScroll = true;
+
+  /// The split-view pane the user last touched; only it drives the other one.
+  ScrollController? _scrollLeader;
 
   JsonParseResult _parsed = parseJson('');
   String _parsedText = '';
@@ -68,6 +74,8 @@ class _ViewerPageState extends State<ViewerPage> {
     _editorFocus.dispose();
     _tree.dispose();
     _searchController.dispose();
+    _editorScroll.dispose();
+    _viewerScroll.dispose();
     super.dispose();
   }
 
@@ -399,17 +407,20 @@ class _ViewerPageState extends State<ViewerPage> {
             segments: const [
               ButtonSegment(
                 value: ViewMode.view,
-                icon: Icon(Icons.visibility_outlined),
+                icon: Icon(Icons.visibility_outlined, semanticLabel: 'View'),
                 tooltip: 'View',
               ),
               ButtonSegment(
                 value: ViewMode.edit,
-                icon: Icon(Icons.edit_outlined),
+                icon: Icon(Icons.edit_outlined, semanticLabel: 'Edit'),
                 tooltip: 'Edit',
               ),
               ButtonSegment(
                 value: ViewMode.split,
-                icon: Icon(Icons.vertical_split_outlined),
+                icon: Icon(
+                  Icons.vertical_split_outlined,
+                  semanticLabel: 'Split view',
+                ),
                 tooltip: 'Split view',
               ),
             ],
@@ -537,6 +548,12 @@ class _ViewerPageState extends State<ViewerPage> {
           ),
         ),
       ],
+      if (_mode == ViewMode.split)
+        CheckedPopupMenuItem(
+          value: () => setState(() => _syncScroll = !_syncScroll),
+          checked: _syncScroll,
+          child: const Text('Sync scrolling'),
+        ),
       if (valid) ...[
         PopupMenuItem(
           value: _format,
@@ -582,6 +599,7 @@ class _ViewerPageState extends State<ViewerPage> {
     ];
     return PopupMenuButton<VoidCallback>(
       tooltip: 'More',
+      icon: const Icon(Icons.more_vert, semanticLabel: 'More'),
       onSelected: (action) => action(),
       itemBuilder: (_) => items,
     );
@@ -633,12 +651,51 @@ class _ViewerPageState extends State<ViewerPage> {
             ? const VerticalDivider(width: 1)
             : const Divider(height: 1);
         final children = [
-          Expanded(child: _buildEditor()),
+          Expanded(
+            child: _syncedPane(_editorScroll, _viewerScroll, _buildEditor()),
+          ),
           divider,
-          Expanded(child: _buildViewer()),
+          Expanded(
+            child: _syncedPane(_viewerScroll, _editorScroll, _buildViewer()),
+          ),
         ];
         return wide ? Row(children: children) : Column(children: children);
     }
+  }
+
+  /// Wraps a split-view pane so scrolling it scrolls the other pane to the
+  /// same relative position. Proportional, because the editor text and the
+  /// tree have no line-by-line correspondence (collapsed nodes, minified files).
+  Widget _syncedPane(
+    ScrollController own,
+    ScrollController other,
+    Widget child,
+  ) {
+    return Listener(
+      onPointerDown: (_) => _scrollLeader = own,
+      onPointerSignal: (_) => _scrollLeader = own,
+      child: NotificationListener<ScrollUpdateNotification>(
+        onNotification: (n) {
+          if (!_syncScroll ||
+              _scrollLeader != own ||
+              n.metrics.axis != Axis.vertical ||
+              !other.hasClients) {
+            return false;
+          }
+          final max = n.metrics.maxScrollExtent;
+          final fraction = max <= 0 ? 0.0 : n.metrics.pixels / max;
+          final target = other.position;
+          target.jumpTo(
+            (fraction * target.maxScrollExtent).clamp(
+              target.minScrollExtent,
+              target.maxScrollExtent,
+            ),
+          );
+          return false;
+        },
+        child: child,
+      ),
+    );
   }
 
   Widget _buildWelcome() {
@@ -734,6 +791,7 @@ class _ViewerPageState extends State<ViewerPage> {
           ? TextSpan(text: text, style: mono)
           : highlightJson(text, JsonColors.of(context), mono);
       return SingleChildScrollView(
+        controller: _mode == ViewMode.split ? _viewerScroll : null,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: SelectableText.rich(span),
       );
@@ -745,6 +803,7 @@ class _ViewerPageState extends State<ViewerPage> {
       fontSize: _fontSize,
       searchQuery: _searching ? _searchController.text : '',
       header: _buildSummary(value),
+      scrollController: _mode == ViewMode.split ? _viewerScroll : null,
     );
   }
 
@@ -776,6 +835,7 @@ class _ViewerPageState extends State<ViewerPage> {
       onFormat: _format,
       onMinify: _minify,
       onErrorTap: _jumpToError,
+      scrollController: _mode == ViewMode.split ? _editorScroll : null,
     );
   }
 }

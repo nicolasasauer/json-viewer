@@ -13,7 +13,8 @@ JSON files in file managers, mail apps and so on.
   - expand all / collapse all, or switch to formatted text
 - **Edit**: plain-text editor with syntax highlighting, live validation (line and column
   of the error, tap to jump there), a symbol bar for `{ } [ ] " : ,` and Format / Minify
-- **Split view**: editor and tree side by side (on a tablet) or stacked (on a phone), updating live
+- **Split view**: editor and tree side by side (on a tablet) or stacked (on a phone), updating live;
+  scrolling one pane scrolls the other to the same relative position (can be turned off in the menu)
 - Save back to the opened file, *Save as…*, *New*, *Open file*
 - Asks before throwing away unsaved changes
 - A− / A+ text size, light and dark theme
@@ -35,6 +36,15 @@ The app has no third-party Dart packages. File access goes through the Android
 Storage Access Framework directly, so a file opened via *Open file* or
 *Save as* stays writable.
 
+## Icon
+
+The launcher icon is defined once in `tool/icon/icon.svg`:
+
+- adaptive icon (API 26+, including the themed/monochrome variant):
+  `res/drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`, `res/mipmap-anydpi-v26/ic_launcher.xml`
+- PNGs for older Android versions and the Play Store icon (`store/icon-512.png`):
+  `node tool/icon/render.js` (needs Playwright)
+
 ## Build
 
 ```sh
@@ -42,8 +52,24 @@ flutter test
 flutter build apk --release --split-per-abi
 ```
 
-The GitHub Actions workflow (`.github/workflows/build.yml`) runs analyze and tests,
-builds the APKs and uploads them as an artifact.
+GitHub Actions:
 
-The release build is signed with the debug key (Flutter default). Set up your own
-signing config in `android/app/build.gradle.kts` before publishing.
+- `build.yml`: analyze, tests, split APKs and an App Bundle (`.aab`) as artifacts
+- `screenshots.yml`: starts an Android emulator, opens `tool/screenshots/sample.json` via a
+  real VIEW intent and uploads screenshots (phone light/dark, editor, search, split view,
+  landscape) as the `screenshots` artifact
+
+### Release signing
+
+Without secrets the release build is signed with the debug key. To sign with your
+upload key, add these repository secrets (*Settings → Secrets and variables → Actions*):
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 upload-keystore.jks` |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| `ANDROID_KEY_ALIAS` | key alias |
+| `ANDROID_KEY_PASSWORD` | key password |
+
+Locally, create `android/key.properties` (git-ignored) with `storeFile`, `storePassword`,
+`keyAlias`, `keyPassword`.

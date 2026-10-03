@@ -14,6 +14,7 @@ class JsonEditor extends StatelessWidget {
     required this.onFormat,
     required this.onMinify,
     required this.onErrorTap,
+    this.scrollController,
   });
 
   final TextEditingController controller;
@@ -26,6 +27,7 @@ class JsonEditor extends StatelessWidget {
   final VoidCallback onFormat;
   final VoidCallback onMinify;
   final VoidCallback onErrorTap;
+  final ScrollController? scrollController;
 
   /// Inserts [text] at the cursor (replacing any selection) and places the
   /// cursor [cursorBack] characters before the end of the inserted text.
@@ -54,6 +56,7 @@ class JsonEditor extends StatelessWidget {
           child: TextField(
             controller: controller,
             focusNode: focusNode,
+            scrollController: scrollController,
             expands: true,
             maxLines: null,
             minLines: null,

@@ -182,6 +182,7 @@ class JsonTreeView extends StatefulWidget {
     required this.fontSize,
     this.searchQuery = '',
     this.header,
+    this.scrollController,
   });
 
   final Object? value;
@@ -189,6 +190,7 @@ class JsonTreeView extends StatefulWidget {
   final double fontSize;
   final String searchQuery;
   final Widget? header;
+  final ScrollController? scrollController;
 
   @override
   State<JsonTreeView> createState() => _JsonTreeViewState();
@@ -226,6 +228,7 @@ class _JsonTreeViewState extends State<JsonTreeView> {
         final header = widget.header;
         final extra = header == null ? 0 : 1;
         return ListView.builder(
+          controller: widget.scrollController,
           padding: const EdgeInsets.only(bottom: 32),
           itemCount: rows.length + extra,
           itemBuilder: (context, index) {
