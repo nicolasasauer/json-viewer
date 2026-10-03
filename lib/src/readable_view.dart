@@ -315,50 +315,61 @@ class _Renderer {
           borderRadius: BorderRadius.circular(8),
         ),
         clipBehavior: Clip.antiAlias,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Table(
-            defaultColumnWidth: const IntrinsicColumnWidth(),
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-            border: TableBorder(horizontalInside: border),
-            children: [
-              TableRow(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainer,
-                ),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              // Narrow tables stretch their last column to fill the width.
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: Table(
+                defaultColumnWidth: const IntrinsicColumnWidth(),
+                columnWidths: {
+                  columns.length - 1: const IntrinsicColumnWidth(flex: 1),
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                border: TableBorder(horizontalInside: border),
                 children: [
-                  for (final c in columns)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      child: Text(
-                        label(c),
-                        style: labelStyle.copyWith(fontWeight: FontWeight.w600),
-                      ),
+                  TableRow(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainer,
+                    ),
+                    children: [
+                      for (final c in columns)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          child: Text(
+                            label(c),
+                            style: labelStyle.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  for (var i = 0; i < shown; i++)
+                    TableRow(
+                      children: [
+                        for (final c in columns)
+                          rows[i].containsKey(c)
+                              ? cell(
+                                  value(
+                                    rows[i][c],
+                                    childPath(childPath(path, i), c),
+                                    compact: true,
+                                  ),
+                                  childPath(childPath(path, i), c),
+                                  rows[i][c],
+                                  c,
+                                )
+                              : const SizedBox.shrink(),
+                      ],
                     ),
                 ],
               ),
-              for (var i = 0; i < shown; i++)
-                TableRow(
-                  children: [
-                    for (final c in columns)
-                      rows[i].containsKey(c)
-                          ? cell(
-                              value(
-                                rows[i][c],
-                                childPath(childPath(path, i), c),
-                                compact: true,
-                              ),
-                              childPath(childPath(path, i), c),
-                              rows[i][c],
-                              c,
-                            )
-                          : const SizedBox.shrink(),
-                  ],
-                ),
-            ],
+            ),
           ),
         ),
       ),

@@ -31,6 +31,12 @@ tap() {
   return 1
 }
 
+rotate() {
+  adb shell cmd window user-rotation lock "$1" >/dev/null 2>&1 ||
+    adb shell settings put system user_rotation "$1"
+  sleep 2
+}
+
 open_sample() {
   adb shell am force-stop $PKG
   adb shell am start -W -n $PKG/.MainActivity \
@@ -52,7 +58,7 @@ demo() { adb shell am broadcast -a com.android.systemui.demo -e command "$@" >/d
 demo enter
 demo clock -e hhmm 1410
 demo battery -e level 100 -e plugged false
-demo network -e wifi show -e level 4
+demo network -e wifi show -e level 4 -e fully true
 demo network -e mobile hide
 demo notifications -e visible false
 
@@ -77,16 +83,16 @@ shot 05-phone-readable-dark
 tap "Split view" && shot 06-phone-split-dark
 
 # --- Landscape (wide layout), dark --------------------------------------------
-adb shell settings put system user_rotation 1
+rotate 1
 open_sample
 shot 07-landscape-readable-dark
 tap "Split view" && shot 08-landscape-split-dark
-tap "Programmierung" contains && sleep 1 && shot 09-landscape-split-jump-dark
+tap "Programmierung" && sleep 1 && shot 09-landscape-split-jump-dark
 adb shell input keyevent KEYCODE_BACK; sleep 1
 tap "More" && tap "Tree view" && tap "Search" && adb shell input text "Algebra" && sleep 2 && shot 10-landscape-tree-search-dark
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
-adb shell settings put system user_rotation 0
+rotate 0
 adb shell cmd uimode night no
 
 # --- Launcher icon -----------------------------------------------------------
