@@ -111,7 +111,7 @@ shot 09-landscape-view-dark
 tap "Split view" && shot 10-landscape-split-dark
 tap "Informatik B.Sc." && sleep 1 && shot 11-landscape-split-jump-dark
 adb shell input keyevent KEYCODE_BACK; sleep 1
-tap "View" && tap "More" && tap "Tree view" && tap "Search" && adb shell input text "Algebra" && sleep 2 && shot 12-landscape-tree-search-dark
+tap "View" && tap "More" && tap "Tree view" && tap "Search" && adb shell input text "Algebra" && sleep 1 && adb shell input keyevent KEYCODE_BACK && sleep 2 && shot 12-landscape-tree-search-dark
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
 rotate 0

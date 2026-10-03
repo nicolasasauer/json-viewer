@@ -601,12 +601,14 @@ class _KindChips extends StatelessWidget {
       children: [
         for (final k in JsonKind.values)
           ChoiceChip(
+            showCheckmark: false,
             avatar: Icon(_kindIcon(k), size: 18),
             label: Text(k.label),
             selected: selected == k,
             onSelected: (_) => onSelected(k),
           ),
         ChoiceChip(
+          showCheckmark: false,
           avatar: const Icon(Icons.content_paste, size: 18),
           label: const Text('Paste JSON'),
           selected: selected == 'clipboard',
