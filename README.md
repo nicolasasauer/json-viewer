@@ -119,3 +119,7 @@ Locally, create `android/key.properties` (git-ignored) with `storeFile`, `storeP
 
 - [PRIVACY.md](PRIVACY.md): privacy policy (English/German), linked from the Play listing
 - [store/listing.md](store/listing.md): Play listing texts (English/German) and settings
+
+## License
+
+[MIT](LICENSE)
