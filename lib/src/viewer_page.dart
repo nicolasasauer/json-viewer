@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'file_bridge.dart';
+import 'form_editor.dart';
+import 'json_edit.dart';
 import 'json_editor.dart';
 import 'json_highlighter.dart';
 import 'json_locator.dart';
@@ -47,6 +49,13 @@ class _ViewerPageState extends State<ViewerPage> {
   double _fontSize = 14;
   bool _searching = false;
   bool _syncScroll = true;
+
+  /// Edit mode shows the form editor (true) or the text editor (false).
+  bool _formEditor = true;
+
+  /// Undo/redo for form edits (the text editor has its own history).
+  final List<String> _undo = [];
+  final List<String> _redo = [];
 
   /// The split-view pane the user last touched; only it drives the other one.
   ScrollController? _scrollLeader;
@@ -104,6 +113,8 @@ class _ViewerPageState extends State<ViewerPage> {
       _uri = file.uri;
       _savedText = file.content;
       _mode = ViewMode.view;
+      _undo.clear();
+      _redo.clear();
       _searching = false;
       _searchController.clear();
       _reparse();
@@ -111,23 +122,86 @@ class _ViewerPageState extends State<ViewerPage> {
     _tree.reset(_parsed.value);
   }
 
-  void _newDocument() {
-    const template = '{\n  \n}';
-    _controller.value = const TextEditingValue(
-      text: template,
-      selection: TextSelection.collapsed(offset: 4),
-    );
+  void _newDocument({String text = '{\n}', String name = 'Untitled.json'}) {
+    _controller.value = TextEditingValue(text: text);
     setState(() {
       _hasDocument = true;
-      _fileName = 'Untitled.json';
+      _fileName = name;
       _uri = null;
-      _savedText = template;
+      _savedText = text;
       _mode = ViewMode.edit;
+      _formEditor = true;
       _searching = false;
+      _undo.clear();
+      _redo.clear();
       _reparse();
     });
     _tree.reset(_parsed.value);
-    _editorFocus.requestFocus();
+  }
+
+  /// Creates a new document from JSON on the clipboard.
+  Future<void> _pasteAsNew() async {
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text ?? '';
+    final parsed = parseJson(text);
+    if (!mounted) return;
+    if (!parsed.isValid) {
+      _snack(
+        text.trim().isEmpty
+            ? 'The clipboard is empty'
+            : 'The clipboard does not contain valid JSON',
+        action: text.trim().isEmpty
+            ? null
+            : SnackBarAction(
+                label: 'Open as text',
+                onPressed: () async {
+                  if (!await _confirmDiscard() || !mounted) return;
+                  _newDocument(text: text, name: 'Pasted.json');
+                  setState(() => _formEditor = false);
+                },
+              ),
+      );
+      return;
+    }
+    if (!await _confirmDiscard() || !mounted) return;
+    _newDocument(text: prettyJson(parsed.value), name: 'Pasted.json');
+    setState(() => _mode = ViewMode.view);
+  }
+
+  /// Applies a structured edit from the form editor to the text.
+  void _applyEdit(JsonEdit edit) {
+    final parsed = _parseNow();
+    if (!parsed.isValid) return;
+    final before = _controller.text;
+    final Object? value;
+    try {
+      value = edit(deepCopy(parsed.value));
+    } catch (e) {
+      _snack('Could not apply change: $e');
+      return;
+    }
+    final after = encodeLike(value, before);
+    if (after == before) return;
+    _undo.add(before);
+    if (_undo.length > 200) _undo.removeAt(0);
+    _redo.clear();
+    _replaceTextKeepingHistory(after);
+  }
+
+  void _undoEdit() {
+    if (_undo.isEmpty) return;
+    _redo.add(_controller.text);
+    _replaceTextKeepingHistory(_undo.removeLast());
+  }
+
+  void _redoEdit() {
+    if (_redo.isEmpty) return;
+    _undo.add(_controller.text);
+    _replaceTextKeepingHistory(_redo.removeLast());
+  }
+
+  void _replaceTextKeepingHistory(String text) {
+    _controller.value = TextEditingValue(text: text);
+    setState(_reparse);
   }
 
   void _onTextChanged() {
@@ -181,6 +255,10 @@ class _ViewerPageState extends State<ViewerPage> {
 
   Future<bool> _save({bool saveAs = false}) async {
     if (!_hasDocument) return false;
+    // Let a focused form field write back its pending edit first.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return false;
     final text = _controller.text;
     final parsed = _parseNow();
     if (!parsed.isValid) {
@@ -299,6 +377,7 @@ class _ViewerPageState extends State<ViewerPage> {
   void _jumpToError() {
     final offset = _parsed.error?.offset;
     if (_mode == ViewMode.view) _setMode(ViewMode.edit);
+    if (_formEditor) setState(() => _formEditor = false);
     if (offset != null) {
       final o = offset.clamp(0, _controller.text.length);
       _controller.selection = TextSelection.collapsed(offset: o);
@@ -498,6 +577,13 @@ class _ViewerPageState extends State<ViewerPage> {
         child: const ListTile(
           leading: Icon(Icons.note_add_outlined),
           title: Text('New'),
+        ),
+      ),
+      PopupMenuItem(
+        value: _pasteAsNew,
+        child: const ListTile(
+          leading: Icon(Icons.content_paste),
+          title: Text('Paste JSON'),
         ),
       ),
       if (!wide)
@@ -736,7 +822,7 @@ class _ViewerPageState extends State<ViewerPage> {
             Text('JSON Viewer', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
-              'Open a .json file or create a new one.',
+              'Open a .json file, create a new one or paste JSON.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -757,6 +843,11 @@ class _ViewerPageState extends State<ViewerPage> {
                   onPressed: _create,
                   icon: const Icon(Icons.note_add_outlined),
                   label: const Text('New'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _pasteAsNew,
+                  icon: const Icon(Icons.content_paste),
+                  label: const Text('Paste JSON'),
                 ),
               ],
             ),
@@ -864,6 +955,7 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   Widget _buildEditor() {
+    if (_mode == ViewMode.edit && _formEditor) return _buildFormEditor();
     return JsonEditor(
       controller: _controller,
       focusNode: _editorFocus,
@@ -874,6 +966,91 @@ class _ViewerPageState extends State<ViewerPage> {
       onMinify: _minify,
       onErrorTap: _jumpToError,
       scrollController: _mode == ViewMode.split ? _editorScroll : null,
+      onSwitchToForm: _mode == ViewMode.edit
+          ? () => setState(() {
+              _parseNow();
+              _formEditor = true;
+            })
+          : null,
+    );
+  }
+
+  Widget _buildFormEditor() {
+    final theme = Theme.of(context);
+    final parsed = _parseNow();
+    final Widget body = parsed.isValid
+        ? Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 960),
+              child: JsonFormEditor(
+                value: parsed.value,
+                onEdit: _applyEdit,
+                fontSize: _fontSize,
+              ),
+            ),
+          )
+        : ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(
+                color: theme.colorScheme.errorContainer,
+                child: ListTile(
+                  leading: Icon(
+                    Icons.error_outline,
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                  title: Text(
+                    'The form needs valid JSON',
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                  ),
+                  subtitle: Text(
+                    '${parsed.error}',
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                  ),
+                  trailing: TextButton(
+                    onPressed: () {
+                      setState(() => _formEditor = false);
+                      _jumpToError();
+                    },
+                    child: const Text('Fix in text'),
+                  ),
+                ),
+              ),
+            ],
+          );
+    return Column(
+      children: [
+        Expanded(child: body),
+        const Divider(height: 1),
+        Material(
+          color: theme.colorScheme.surfaceContainer,
+          child: SafeArea(
+            top: false,
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: 'Undo',
+                  icon: const Icon(Icons.undo, semanticLabel: 'Undo'),
+                  onPressed: _undo.isEmpty ? null : _undoEdit,
+                ),
+                IconButton(
+                  tooltip: 'Redo',
+                  icon: const Icon(Icons.redo, semanticLabel: 'Redo'),
+                  onPressed: _redo.isEmpty ? null : _redoEdit,
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () => setState(() => _formEditor = false),
+                  icon: const Icon(Icons.data_object),
+                  label: const Text('Edit as text'),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,18 @@ A small Android app for viewing and editing `.json` files, the JSON
 counterpart of Markdown Viewer. It shows up as an **"Open with"** option for
 JSON files in file managers, mail apps and so on.
 
+<p>
+  <img src="docs/screenshots/01-phone-readable-light.png" width="200" alt="Readable view">
+  <img src="docs/screenshots/04-phone-form-light.png" width="200" alt="Form editor">
+  <img src="docs/screenshots/06-phone-text-editor-light.png" width="200" alt="Text editor">
+  <img src="docs/screenshots/07-phone-readable-dark.png" width="200" alt="Readable view, dark">
+</p>
+<p>
+  <img src="docs/screenshots/10-landscape-split-dark.png" width="600" alt="Split view">
+</p>
+
+Screenshots are taken automatically on an Android emulator by `.github/workflows/screenshots.yml`.
+
 ## Features
 
 - **Readable view** (default): the JSON rendered like a document instead of code
@@ -17,12 +29,18 @@ JSON files in file managers, mail apps and so on.
   - long-press any node to copy its value, path (`$.users[0].name`) or key
   - search keys and values (matching nodes are highlighted and their parents expanded)
   - expand all / collapse all, or switch to formatted text
-- **Edit**: plain-text editor with syntax highlighting, live validation (line and column
+- **Edit → Form** (default): build or extend JSON without typing syntax
+  - every field has an input that fits its type: text, number, a Yes/No switch, "empty" for `null`
+  - **Add field** (name + type: Text, Number, Yes/No, Group, List, Empty, or *Paste JSON* from the clipboard)
+  - **Add item** in lists; for lists of objects the new item gets the same fields as the previous one
+  - per field/item menu: rename, change type, duplicate, move up/down, delete; undo/redo
+  - keeps the file's indentation style (spaces, tabs or minified)
+- **Edit → Text**: plain-text editor with syntax highlighting, live validation (line and column
   of the error, tap to jump there), a symbol bar for `{ } [ ] " : ,` and Format / Minify
 - **Split view**: editor and tree side by side (on a tablet) or stacked (on a phone), updating live;
   scrolling one pane scrolls the other to the same relative position (can be turned off in the menu).
   Tapping a value in the rendered pane selects it in the text
-- Save back to the opened file, *Save as…*, *New*, *Open file*
+- Save back to the opened file, *Save as…*, *New*, *Open file*, *Paste JSON* (new document from the clipboard)
 - Asks before throwing away unsaved changes
 - A− / A+ text size, light and dark theme
 
@@ -36,6 +54,8 @@ JSON files in file managers, mail apps and so on.
 | Screen, modes, save / discard logic | `lib/src/viewer_page.dart` |
 | Readable (rendered) view | `lib/src/readable_view.dart` |
 | Tree view, search | `lib/src/json_tree_view.dart` |
+| Form editor and its dialogs | `lib/src/form_editor.dart` |
+| Structured edits (add, rename, move, convert, keep indentation) | `lib/src/json_edit.dart` |
 | Path → text position (jump from view to editor) | `lib/src/json_locator.dart` |
 | Editor, symbol bar, status line | `lib/src/json_editor.dart` |
 | Parsing, errors, paths, formatting | `lib/src/json_tools.dart` |

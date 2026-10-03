@@ -90,22 +90,26 @@ shot 02-phone-readable-scrolled-light
 
 tap "More" && tap "Tree view" && tap "More" && tap "Expand all" && shot 03-phone-tree-light
 
-tap "Edit" && shot 04-phone-editor-light
+tap "Edit" && shot 04-phone-form-light
+tap "Add field" && sleep 1 && shot 05-phone-form-add-field-light
+adb shell input keyevent KEYCODE_BACK; sleep 1
+adb shell input keyevent KEYCODE_BACK; sleep 1
+tap "Edit as text" && shot 06-phone-text-editor-light
 
 # --- Phone, dark -------------------------------------------------------------
 adb shell cmd uimode night yes
 open_sample
-shot 05-phone-readable-dark
-tap "Split view" && shot 06-phone-split-dark
+shot 07-phone-readable-dark
+tap "Split view" && shot 08-phone-split-dark
 
 # --- Landscape (wide layout), dark --------------------------------------------
 rotate 1
 open_sample
-shot 07-landscape-readable-dark
-tap "Split view" && shot 08-landscape-split-dark
-tap "Programmierung" && sleep 1 && shot 09-landscape-split-jump-dark
+shot 09-landscape-readable-dark
+tap "Split view" && shot 10-landscape-split-dark
+tap "Informatik B.Sc." && sleep 1 && shot 11-landscape-split-jump-dark
 adb shell input keyevent KEYCODE_BACK; sleep 1
-tap "More" && tap "Tree view" && tap "Search" && adb shell input text "Algebra" && sleep 2 && shot 10-landscape-tree-search-dark
+tap "View" && tap "More" && tap "Tree view" && tap "Search" && adb shell input text "Algebra" && sleep 2 && shot 12-landscape-tree-search-dark
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
 rotate 0
@@ -117,6 +121,6 @@ sleep 4
 dismiss_anr
 adb shell input swipe 540 1800 540 600 300
 sleep 2
-shot 11-app-drawer
+shot 13-app-drawer
 
 ls -la "$OUT"

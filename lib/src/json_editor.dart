@@ -15,6 +15,7 @@ class JsonEditor extends StatelessWidget {
     required this.onMinify,
     required this.onErrorTap,
     this.scrollController,
+    this.onSwitchToForm,
   });
 
   final TextEditingController controller;
@@ -28,6 +29,9 @@ class JsonEditor extends StatelessWidget {
   final VoidCallback onMinify;
   final VoidCallback onErrorTap;
   final ScrollController? scrollController;
+
+  /// Shows a "Form" button in the symbol bar when set.
+  final VoidCallback? onSwitchToForm;
 
   /// Inserts [text] at the cursor (replacing any selection) and places the
   /// cursor [cursorBack] characters before the end of the inserted text.
@@ -79,7 +83,12 @@ class JsonEditor extends StatelessWidget {
           ),
         ),
         const Divider(height: 1),
-        _SymbolBar(onInsert: _insert, onFormat: onFormat, onMinify: onMinify),
+        _SymbolBar(
+          onInsert: _insert,
+          onFormat: onFormat,
+          onMinify: onMinify,
+          onSwitchToForm: onSwitchToForm,
+        ),
         _StatusLine(
           parseResult: parseResult,
           upToDate: upToDate,
@@ -95,11 +104,13 @@ class _SymbolBar extends StatelessWidget {
     required this.onInsert,
     required this.onFormat,
     required this.onMinify,
+    this.onSwitchToForm,
   });
 
   final void Function(String text, {int cursorBack}) onInsert;
   final VoidCallback onFormat;
   final VoidCallback onMinify;
+  final VoidCallback? onSwitchToForm;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +132,14 @@ class _SymbolBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         children: [
+          if (onSwitchToForm != null) ...[
+            TextButton.icon(
+              onPressed: onSwitchToForm,
+              icon: const Icon(Icons.dynamic_form_outlined, size: 18),
+              label: const Text('Form'),
+            ),
+            const VerticalDivider(indent: 10, endIndent: 10),
+          ],
           symbol('{ }', '{}', back: 1),
           symbol('[ ]', '[]', back: 1),
           symbol('" "', '""', back: 1),

@@ -82,6 +82,8 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit as text'));
+    await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), '{"a": }');
     await tester.pump(const Duration(milliseconds: 400));
@@ -121,5 +123,60 @@ void main() {
     await tester.drag(find.byType(TextField), const Offset(0, -600));
     await tester.pumpAndSettle();
     expect(viewerPosition().pixels, greaterThan(0));
+  });
+
+  testWidgets('form editor: new document, add a list of objects', (
+    tester,
+  ) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async => null);
+    await tester.pumpWidget(const JsonViewerApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('New'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add field'), findsOneWidget);
+
+    // Add a list called "modules".
+    await tester.tap(find.text('Add field'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'modules');
+    await tester.tap(find.text('List'));
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    // First item: a group with a "title" field.
+    await tester.tap(find.text('Add item'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Group'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add field').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'title');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Analysis');
+    await tester.pump(const Duration(seconds: 1));
+
+    // Second item copies the fields of the first.
+    await tester.tap(find.text('Add item (same fields)'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Edit as text'));
+    await tester.pumpAndSettle();
+    final editor = tester.widget<TextField>(find.byType(TextField));
+    expect(
+      editor.controller!.text,
+      '{\n  "modules": [\n    {\n      "title": "Analysis"\n    },\n'
+      '    {\n      "title": ""\n    }\n  ]\n}',
+    );
+
+    // Undo is available back in the form.
+    await tester.tap(find.text('Form'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Undo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add item (same fields)'), findsOneWidget);
+    expect(find.text('#2'), findsNothing);
   });
 }
